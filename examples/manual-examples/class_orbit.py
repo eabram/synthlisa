@@ -15,13 +15,14 @@ class orbit():
         self.num_back=kwargs.pop('num_back',0)
         self.filename=kwargs.pop('filename','None')
         self.directory_imp=home+kwargs.pop('directory_imp','orbit_files/')
+        directory_plot=kwargs.pop('directory_plot','/home/ester/git/synthlisa/figures')
         if self.filename=='None':
             print('Please select filename')
         else:
             self.import_file()
 
         self.calculations()
-        self.plot_func()
+        self.plot_func(directory_plot)
 
     def import_file(self):
         directory=self.directory_imp
@@ -81,20 +82,23 @@ class orbit():
             ang=numpy.degrees(numpy.arccos(np.dot(v1,v2)/(np.linalg.norm(v1) * np.linalg.norm(v2))))
 
             return ang
-        
+        s1=[]
+        s2=[]
+        s3=[]
         for i in range(0,len(t)):
-            s1=p2[i,:]-p3[i,:]
-            s2=p3[i,:]-p1[i,:]
-            s3=p1[i,:]-p2[i,:]
+            s1.append(p2[i,:]-p3[i,:])
+            s2.append(p3[i,:]-p1[i,:])
+            s3.append(p1[i,:]-p2[i,:])
 
-            ang1.append(angle_e(s3,-s2))
-            ang2.append(angle_e(s1,-s3))
-            ang3.append(angle_e(s2,-s1))
+            ang1.append(angle_e(s3[-1],-s2[-1]))
+            ang2.append(angle_e(s1[-1],-s3[-1]))
+            ang3.append(angle_e(s2[-1],-s1[-1]))
 
         self.ang=[np.array(ang1),np.array(ang2),np.array(ang3)]
-
+        self.L=[np.array(s1),np.array(s2),np.array(s3)]
    
-    def plot_func(self):
+    def plot_func(self,directory):
+        print("Figures will be saved in: "+directory)
         def save_fig(f,directory,title=False,ext='.png'):
             if not os.path.exists(directory):
                os.makedirs(directory)
@@ -115,7 +119,7 @@ class orbit():
                 axarr[count-1].set_title(par[count])
                 count=count+1
 
-        save_fig(f1,self.home+'figures/',title='positions')
+        save_fig(f1,directory,title='positions')
 
         f2, axarr = plt.subplots(len(self.ang)+1,1)
         for i in range(0,len(self.ang)):
@@ -124,7 +128,7 @@ class orbit():
             axarr[i].set_ylabel('Angle [deg]')
             axarr[i].set_title('Angle at spacecraft '+str(i+1))
         axarr[3].plot(self.t-self.t[0],sum(self.ang))
-        save_fig(f2,self.home+'figures/',title='angles')
+        save_fig(f2,directory,title='angles')
 
 
         plt.show()
