@@ -8,6 +8,7 @@ from fractions import Fraction
 import math
 import datetime
 
+year2sec=32536000
 
 class orbit():
     def __init__(self,home=os.getcwd(),**kwargs):
@@ -16,15 +17,19 @@ class orbit():
         self.filename=kwargs.pop('filename','None')
         self.directory_imp=home+kwargs.pop('directory_imp','orbit_files/')
         directory_plot=kwargs.pop('directory_plot','/home/ester/git/synthlisa/figures')
+        plot_on=kwargs.pop('plot_on',False)
+        self.scale=kwargs.pop('scale',1)
+        self.read_max=kwargs.pop('read_max','all')
         if self.filename=='None':
             print('Please select filename')
         else:
-            self.import_file()
+            self.import_file(read_max=self.read_max)
 
         self.calculations()
-        self.plot_func(directory_plot)
+        if plot_on==True:
+            self.plot_func(directory_plot)
 
-    def import_file(self):
+    def import_file(self,read_max='all'):
         directory=self.directory_imp
         file_orb=self.filename
         num_back=self.num_back
@@ -37,21 +42,29 @@ class orbit():
         direc=self.directory_imp
         file=open(direc+file_orb,'r')
         line_num=1
+        scale=self.scale
+        line_count=0
         for line in file.readlines():
-            a=line.split(' ')
-            b=[]
-            for j in a:
-                b.append(np.float64(float(j)))
-            a=b
-            p[0].append(np.array([a[1],a[2],a[3]]))
-            p[1].append(np.array([a[4],a[5],a[6]]))
-            p[2].append(np.array([a[7],a[8],a[9]]))
-            t.append(a[0])
+            if read_max!='all':
+                if line_count==read_max:
+                    break
+            if line[0]!= '#':
+                a=line.split(' ')
+                b=[]
+                for j in a:
+                    b.append(np.float64(float(j)))
+                a=b
+                #scale=1000*2.5004844051425046)
+                p[0].append(np.array([a[1]*scale,a[2]*scale,a[3]*scale]))
+                p[1].append(np.array([a[4]*scale,a[5]*scale,a[6]*scale]))
+                p[2].append(np.array([a[7]*scale,a[8]*scale,a[9]*scale]))
+                t.append(a[0]*year2sec) # ... [s]
+                line_count=line_count+1
         p=np.array([p[0],p[1],p[2]])
         Dt=t[1]-t[0] # Assuming Dt s constant
         lisa_obj=SampledLISA(p[0],p[1],p[2],Dt,t[0],2)
         self.p=p
-        self.t=t
+        self.t=np.array(t) #... in sec
         self.Dt=Dt
         self.pos=[t,p]
         self.par=par
