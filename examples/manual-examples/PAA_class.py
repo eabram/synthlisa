@@ -540,42 +540,6 @@ class PAA():
                     u_l_calc.append(u_l_tmp)
                     u_r_calc.append(u_r_tmp)
                     t_calc_vec.append(t)
-    #
-    #            calc_check=True
-    #            try:
-    #                v_l_tmp_na = v_l_func_na(t)
-    #                v_r_tmp_na = v_r_func_na(t)
-    #                u_l_tmp_na = u_l_func_na(t)
-    #                u_r_tmp_na = u_r_func_na(t)
-    #            except ValueError:
-    #                calc_check=False
-    #                pass
-    #            if calc_check==True:
-    #                v_l_calc_na.append(v_l_tmp_na)
-    #                v_r_calc_na.append(v_r_tmp_na)
-    #                u_l_calc_na.append(u_l_tmp_na)
-    #                u_r_calc_na.append(u_r_tmp_na)
-    #                t_calc_vec.append(t)
-    #
-    #            calc_check=True
-    #            try:
-    #                v_l_tmp = v_l_func(t)
-    #                v_r_tmp = v_r_func(t)
-    #                u_l_tmp = u_l_func(t)
-    #                u_r_tmp = u_r_func(t)
-    #            except ValueError:
-    #                calc_check=False
-    #                pass
-    #            if calc_check==True:
-    #                v_l_calc.append(v_l_tmp)
-    #                v_r_calc.append(v_r_tmp)
-    #                u_l_calc.append(u_l_tmp)
-    #                u_r_calc.append(u_r_tmp)
-    #                t_calc_vec.append(t)
-
-
-
-
 
 
 
@@ -679,53 +643,19 @@ class PAA():
                     u_l_calc=u_l[i][j,:]
                     u_r_calc=u_r[i][j,:]
 
-                    t_plot_vec.append(t_calc[i][j])
-                    
-                    #[ang_in_v_l,ang_out_v_l] = LA.ang_in_out(v_l_calc,n,r)
-                    #[ang_in_v_r,ang_out_v_r] = LA.ang_in_out(v_r_calc,n,r)
-                    #[ang_in_v_l_stat,ang_out_v_l_stat] = LA.ang_in_out(v_l_stat,n,r)
-                    #[ang_in_v_r_stat,ang_out_v_r_stat] = LA.ang_in_out(v_r_stat,n,r)
-
-                    #PAA_l_in_vec.append(ang_in_v_l - ang_in_v_l_stat)
-                    #PAA_l_out_vec.append(ang_out_v_l)
-                    #PAA_r_in_vec.append(ang_in_v_r - ang_in_v_r_stat)
-                    #PAA_r_out_vec.append(ang_out_v_r)
-                    
+                    t_plot_vec.append(t_calc[i][j])                   
+                   
                     ang_in_v_l = LA.ang_in_dot(v_l_calc,v_l_stat,n,r)
                     ang_in_u_l = LA.ang_in_dot(-u_l_calc,v_l_stat,n,r)
-                    
-                    #ang_in_v_l = LA.ang_in_direct(v_l_calc,v_l_stat,n,r)
-                    #ang_in_v_l = LA.ang_in(v_l_calc,n,r)
-                    #ang_in_v_l = LA.angle(v_l_calc,v_l_stat) # Total angle
-                    
+                   
                     ang_out_v_l = LA.ang_out(v_l_calc,n)
                     ang_out_u_l = LA.ang_out(-u_l_calc,n)
                     
                     ang_in_v_r = LA.ang_in_dot(v_r_calc,v_r_stat,n,r)
                     ang_in_u_r = LA.ang_in_dot(-u_r_calc,v_r_stat,n,r)
-                    #ang_in_v_r = LA.ang_in_direct(v_r_calc,v_r_stat,n,r)
-                    #ang_in_v_r = LA.ang_in(v_r_calc,n,r)
-                    #ang_in_v_r = LA.angle(v_r_calc,v_r_stat) # Total angle
-
                     ang_out_v_r = LA.ang_out(v_r_calc,n)
                     ang_out_u_r = LA.ang_out(-u_r_calc,n)
                      
-                    #ang_in_v_l_stat = LA.ang_in(v_l_stat,n,r)
-                    #ang_out_v_l_stat = LA.ang_out(v_l_stat,n)
-                    #ang_in_v_r_stat = LA.ang_in(v_r_stat,n,r)
-                    #ang_out_v_r_stat = LA.ang_out(v_r_stat,n)
-                    
-
-                    #[ang_in_v_l_stat,ang_out_v_l_stat] = LA.ang_in_out(v_l_stat,n,r)
-                    #[ang_in_v_r_stat,ang_out_v_r_stat] = LA.ang_in_out(v_r_stat,n,r)
-                    #print('ang_vl: ',math.degrees(LA.angle(v_l_calc,v_l_stat))) #...IMPORTANT CHECK
-                    #print('ang_vr: ',math.degrees(LA.angle(v_r_calc,v_r_stat))) #...IMPORTANT CHECK
-                    #print(v_r_stat)
-
-                    #print('')
-                    #print(ang_in_v_l)
-                    #print(ang_in_v_l_stat)
-
                     ang_sc_vec.append(LA.angle(v_l_stat,v_r_stat))
                     ang_beam_vec.append(LA.angle(v_l_calc,v_r_calc))
                     ang_beam_in_l_vec.append(ang_in_v_l - ang_in_u_l)
@@ -801,7 +731,11 @@ class PAA():
         # Calculating velocity
         v_inplane=[]
         v_outplane=[]
+        v_rel_l = []
+        v_rel_r=[]
+        v_abs=[]
         for i in range(0,len(t_calc)):
+            v_abs_vec = []
             x = t_calc[i]
             y1 = pos[i][:,0]
             y2 = pos[i][:,1]
@@ -814,18 +748,90 @@ class PAA():
             x_new = x[0:-1]
             v_inplane_vec=[]
             v_outplane_vec=[]
+            v_rel_l_vec=[]
+            v_rel_r_vec = []
             for j in range(0,len(x_new)):
                 n = normal_vec[i][j]
                 v = np.array([df1dt[j],df2dt[j],df3dt[j]])
-                v_inplane_vec.append(np.linalg.norm(LA.inplane(v,n)))
-                v_outplane_vec.append(np.linalg.norm(v - v_inplane_vec[-1]))
-            
+                inplane_calc = LA.inplane(v,n)
+                v_inplane_vec.append(np.linalg.norm(inplane_calc))
+                outplane_calc = v - inplane_calc
+                v_outplane_vec.append(np.linalg.norm(outplane_calc)*(np.sign(np.dot(outplane_calc,n))))
+                v_abs_vec.append(v)
             v_inplane.append(v_inplane_vec)
             v_outplane.append(v_outplane_vec)
+            v_abs.append(np.array(v_abs_vec))
 
+        self.v_abs = v_abs
         self.v_inplane = v_inplane
         self.v_outplane = v_outplane
 
+        v_rel_l_inplane = []
+        v_rel_r_inplane = []
+        v_rel_l_outplane = []
+        v_rel_r_outplane = []
+        v_rel_l_alongarm= []
+        v_rel_r_alongarm = []
+
+        for i in range(0,len(self.v_abs)):
+            [i_self,i_left,i_right] = i_slr(i+1)
+            i_self = i_self - 1
+            i_left = i_left - 1
+            i_right = i_right -1
+            #print(i_self,i_left,i_right)
+            v_rel_l_inplane_vec = []
+            v_rel_r_inplane_vec = []
+            v_rel_l_outplane_vec = []
+            v_rel_r_outplane_vec = []
+            v_rel_l_alongarm_vec = []
+            v_rel_r_alongarm_vec = []
+
+
+            for j in range(0,len(self.v_abs[i])):               
+                v_rel_l_calc = self.v_abs[i_left][j] - self.v_abs[i_self][j]
+                v_rel_r_calc = self.v_abs[i_right][j] - self.v_abs[i_self][j]
+                n = normal_vec[i][j]
+               
+                r_l = v_l[i_self][j]
+                r_r = v_r[i_self][j]
+
+                #inplane_l = LA.outplane(v_rel_l_calc,r_l)
+                #inplane_r = LA.outplane(v_rel_r_calc,r_r) 
+                #outplane_l = LA.outplane(v_rel_l_calc,n)*np.sign(np.dot(v_rel_l_calc,n))
+                #outplane_r = LA.outplane(v_rel_r_calc,n)*np.sign(np.dot(v_rel_r_calc,n))
+                outplane_l = self.v_outplane[i_left][j] - self.v_outplane[i_self][j]
+                alongarm_l = np.dot(v_rel_l_calc - outplane_l,LA.unit(r_l))
+                inplane_l = v_rel_l_calc - outplane_l - alongarm_l
+                outplane_r = self.v_outplane[i_right][j] - self.v_outplane[i_self][j]
+                alongarm_r = np.dot(v_rel_r_calc - outplane_r,LA.unit(r_r))
+                inplane_r = v_rel_r_calc - outplane_r - alongarm_r
+
+                #v_rel_l_inplane_vec.append(np.linalg.norm(inplane_l)*np.sign(np.dot(inplane_l,r_l)))
+                #v_rel_r_inplane_vec.append(np.linalg.norm(inplane_r)*np.sign(np.dot(inplane_r,r_r)))
+                #v_rel_l_outplane_vec.append(np.linalg.norm(outplane_l)*np.sign(np.dot(outplane_l,n)))
+                #v_rel_r_outplane_vec.append(np.linalg.norm(outplane_r)*np.sign(np.dot(outplane_r,n)))
+                v_rel_l_outplane_vec.append(np.linalg.norm(outplane_l)*np.sign(np.dot(v_rel_l_calc,n)))
+                v_rel_r_outplane_vec.append(np.linalg.norm(outplane_r)*np.sign(np.dot(v_rel_r_calc,n)))
+                v_rel_l_inplane_vec.append(np.linalg.norm(inplane_l))           
+                v_rel_r_inplane_vec.append(np.linalg.norm(inplane_r))
+                v_rel_l_alongarm_vec.append(np.linalg.norm(alongarm_l)*np.sign(alongarm_l))           
+                v_rel_r_alongarm_vec.append(np.linalg.norm(alongarm_r)*np.sign(alongarm_r))
+                
+
+            v_rel_l_inplane.append(np.array(v_rel_l_inplane_vec))
+            v_rel_r_inplane.append(np.array(v_rel_r_inplane_vec))
+            v_rel_l_outplane.append(np.array(v_rel_l_outplane_vec))
+            v_rel_r_outplane.append(np.array(v_rel_r_outplane_vec))
+            v_rel_l_alongarm.append(np.array(v_rel_l_alongarm_vec))
+            v_rel_r_alongarm.append(np.array(v_rel_r_alongarm_vec))
+            
+        self.v_rel_l_inplane = v_rel_l_inplane
+        self.v_rel_r_inplane = v_rel_r_inplane
+        self.v_rel_l_outplane = v_rel_l_outplane
+        self.v_rel_r_outplane = v_rel_r_outplane
+        self.v_rel_l_alongarm = v_rel_l_alongarm
+        self.v_rel_r_alongarm = v_rel_r_alongarm
+                
         ### Plotting
         if plot_on==True:
             def get_date():
@@ -1071,13 +1077,41 @@ class PAA():
                 ax[i].legend(loc='best')
             figs.append(f)
 
- 
+            f,ax = plt.subplots(3,3,figsize=(15,15))
+            plt.subplots_adjust(wspace=2)
+            f.suptitle('Relative velocity')
+            plt.subplots_adjust(hspace=0.6,wspace=0.2)
+            #labels = ['send left','send right','receive left','received right']
+            for i in range(0,len(self.v_rel_l_inplane)):
+                x = np.array(t_calc[i][0:-1])/day2sec
+                ax[i,0].set_title('Inplane velocity relative to SC '+str(i+1))
+                ax[i,0].plot(x,self.v_rel_l_inplane[i],label='left')
+                ax[i,0].plot(x,self.v_rel_r_inplane[i],label='right')
+                ax[i,1].set_title('Out of plane velocity relative to SC '+str(i+1))
+                ax[i,1].plot(x,self.v_rel_l_outplane[i],label='left')
+                ax[i,1].plot(x,self.v_rel_r_outplane[i],label='right')
+                ax[i,2].set_title('Along arm velocity relative to SC '+str(i+1))
+                ax[i,2].plot(x,self.v_rel_l_alongarm[i],label='left')
+                ax[i,2].plot(x,self.v_rel_r_alongarm[i],label='right')
+                
+                ax[i,0].set_xlabel('Time (days)')
+                ax[i,0].set_ylabel('Velocity (m/s)')
+                ax[i,0].legend(loc='best')
+                ax[i,1].set_xlabel('Time (days)')
+                ax[i,1].set_ylabel('Velocity (m/s)')
+                ax[i,1].legend(loc='best')           
+                ax[i,2].set_xlabel('Time (days)')
+                ax[i,2].set_ylabel('Velocity (m/s)')
+                ax[i,2].legend(loc='best')           
+            figs.append(f)
+
+
 
 
 
 
             def save_fig(figs):
-                titles=['-PAA','-diffPAA','-PAA_all','-Breathing_angles','-send_receive_angle','-Wobbling_angle','-Armlengths','-Velocity','-Retarded_time']
+                titles=['-PAA','-diffPAA','-PAA_all','-Breathing_angles','-send_receive_angle','-Wobbling_angle','-Armlengths','-Velocity','-Retarded_time','-Relative_velocity']
                 for i in range(0,len(figs)):
                     title=filename_save+titles[i]+'.png'
                     figs[i].savefig(dir_savefig+title)
@@ -1100,7 +1134,7 @@ class PAA():
         return [[lisa_cache,Orbit],[v_l,v_r,u_l,u_r],PAA_ret,other_ret]
 
 dir_orbits='/home/ester/git/synthlisa/orbits/'
-LISA_opt = False
+LISA_opt = True
 delay=True#'Not ahead'#False
 
 filename_list=[]
@@ -1116,7 +1150,7 @@ for (dirpath, dirnames, filenames) in os.walk(dir_orbits):
 #filename_list=[filename_list[0]]
 #timeunit=['days']
 #dir_extr='new_1_test'
-dir_extr='new_6_interp_arminterp'#interp'
+dir_extr='new_1_synthlisa_arminterp'
 #dir_extr='new_4_interp_arminterp'
 #timeunit=['seconds','days','days']
 timeunit='Default'#['days']
