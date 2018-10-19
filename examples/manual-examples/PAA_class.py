@@ -91,6 +91,106 @@ class la():
 
         return ang_out_calc#ang1-ang2
 
+    def print_component(self,v,v_in,v_out,v_arm):
+        n = self.norm(v)
+        n_in = self.norm(v_in)
+        n_out = self.norm(v_out)
+        n_arm = self.norm(v_arm)
+
+        print(n_in/n)
+        print((n_out**2+n_in**2+n_arm**2)/n**2)
+        print('')
+
+        return 0
+
+    def ang_in_out(self,v1,v2,n,v_stat,r):
+        n = self.unit(n)
+        v1_out = (np.dot(v1,n)*n)/(self.norm(n)**2)
+        v1_arm = (np.dot(v1,v_stat)*v_stat)/(self.norm(v_stat)**2)
+        v1_in = v1 - v1_out - v1_arm
+
+        v2_out = (np.dot(v2,n)*n)/(self.norm(n)**2)
+        v2_arm = (np.dot(v2,v_stat)*v_stat)/(self.norm(v_stat)**2)
+        v2_in = v2 - v2_out - v2_arm
+
+        ang_out_1 = np.arcsin(self.norm(v1_out)/self.norm(v1))
+        ang_out_1 = ang_out_1 * np.sign(np.dot(v1_out,n))
+        ang_out_2 = np.arcsin(self.norm(v2_out)/self.norm(v2))
+        ang_out_2 = ang_out_2 * np.sign(np.dot(v2_out,n))
+        ang_out = ang_out_1 - ang_out_2
+        
+        q = np.cross(n,v_stat)
+        q = self.unit(q) 
+      
+        v1_in_calc = v1 - v1_out
+        v2_in_calc = v2 - v2_out
+        ang_in_1 = np.arcsin(self.norm(np.cross(v1_in_calc,r))/(self.norm(v1_in_calc)*self.norm(r)))
+        ang_in_2 = np.arcsin(self.norm(np.cross(v2_in_calc,r))/(self.norm(v2_in_calc)*self.norm(r)))
+        
+        #ang_in = ang_in_1 - ang_in_2
+        #ang_in = 2*np.arctan(self.norm(v1_in)/self.norm(v1_arm))
+        ang_in_1 = np.arcsin(self.norm(np.cross(v1_in_calc,v_stat))/(self.norm(v1_in_calc)*self.norm(v_stat)))
+        ang_in_2 = np.arcsin(self.norm(np.cross(v2_in_calc,v_stat))/(self.norm(v2_in_calc)*self.norm(v_stat)))
+        ang_in = abs(ang_in_1) + abs(ang_in_2)
+        #v1_calc = v1 - v1_out
+        #v2_calc = v2 - v2_out
+        #ang_in = np.linalg.norm(np.cross(v1_calc,v2_calc))/(np.linalg.norm(v1_calc)*np.linalg.norm(v2_calc))
+        
+        #ang_in_1 = np.arcsin(self.norm(v1_in)/self.norm(v1))
+        #ang_in_1 = ang_in_1 * np.sign(np.dot(v1_in,q))
+        #ang_in_2 = np.arcsin(self.norm(v2_in)/self.norm(v2))
+        #ang_out_2 = ang_in_2 * np.sign(np.dot(v2_in,q))
+        #ang_in = ang_in_1# - ang_in_2
+
+
+        #ang_in = np.arcsin(self.norm(np.cross(v1_arm,v2_arm))/(self.norm(v1_in)*self.norm(v2_in)))
+
+        #ang_in = 2*(self.norm(v1_in)/self.norm(v_stat))
+
+        #self.print_component(v1,v1_in,v1_out,v1_arm) 
+        #self.print_component(v2,v2_in,v2_out,v2_arm) 
+        #ang_in_1 = np.arcsin(self.norm(np.cross(v1_in,r)) / (self.norm(v1_in)*self.norm(r)))
+        #ang_in_2 = np.arcsin(self.norm(np.cross(v2_in,r)) / (self.norm(v1_in)*self.norm(r)))
+        #ang_in = ang_in_1 - ang_in_2
+        #ang_out = np.arcsin(self.norm(np.cross(v1_out,v2_out)) / (self.norm(v1_out)*self.norm(v2_out)))
+        #ang_out = ang_out*np.sign(np.dot(v1_out-v2_out,n))
+
+        #v1_out=self.unit(v1_out)
+        #v1_in=self.unit(v1_in)
+        #v2_out=self.unit(v2_out)
+        #v2_in=self.unit(v2_in)
+        
+        #ang_out = np.arcsin(self.norm(v1_out-v2_out)/self.norm(v1-v2))
+        #ang_out = ang_out*np.sign(np.dot(v1_out-v2_out,n))
+        #ang_in = np.arcsin(self.norm(v1_in-v2_in)/self.norm(v1-v2))
+        #ang_in = ang_out*np.sign(np.dot(v1_in-v2_in,n))
+
+
+        #ang_in = np.linalg.norm(np.cross(v1_in,v2_in))/(np.linalg.norm(v1_in)*np.linalg.norm(v2_in))
+        #ang_in = np.arcsin(ang_in)
+        #ang_out = np.linalg.norm(np.cross(v1_out,v2_out))/(np.linalg.norm(v1_out)*np.linalg.norm(v2_out))
+        #ang_out = np.arcsin(ang_out)
+
+        #ang_in = self.angle(v1_in,v2_in)
+        #ang_out = self.angle(v1_out,v2_out)
+
+
+        #v_out = np.cross(v1_out,v2_out)
+        #v_out = self.unit(v_out)
+        #ang_out = np.arcsin(v_out)
+        #v_in = np.cross(v1_in,v2_in)
+        #v_in = self.unit(v_in)
+        #ang_in = np.arcsin(v_in)
+
+
+        #ang_out = np.arccos(np.dot(v1_out,v2_out))
+        #ang_in = np.arccos(np.dot(v1_in,v2_in))
+        
+        return [ang_in,ang_out]
+
+
+
+
 class PAA():
     def __init__(self,**kwargs):
         self.home = kwargs.pop('home',os.getcwd())
@@ -280,20 +380,18 @@ class PAA():
 
         def func_arm_sec(orbit,i,side,LISA=False): # Returns arm is seconds
             if LISA==False:
-                #i = (i%3)-1
                 t_inter=orbit.t
                 [i_self,i_left,i_right] = i_slr(i)
-                pos_self = func_pos(orbit,i_self)
+                pos_self = func_pos(orbit,i_self,LISA=LISA)
                 if side=='r':
-                    pos_right = func_pos(orbit,i_right)
+                    pos_right = func_pos(orbit,i_righti,LISA=LISA)
 
                     arms = lambda time: np.linalg.norm(pos_right(time) - pos_self(time))/c
                     #arms = orbit.v_r
                 elif side=='l':
-                    pos_left = func_pos(orbit,i_left)
+                    pos_left = func_pos(orbit,i_left,LISA=LISA)
                     arms = lambda time: np.linalg.norm(pos_left(time) - pos_self(time))/c
                     #arms = orbit.v_l
-
                 return arms
 
             else:
@@ -307,8 +405,9 @@ class PAA():
                 elif side=='r':
                     arms = lambda time: (np.array(LISA.putp(i_r,time)) - np.array(LISA.putp(i_self,time)))/c
                 return arms
+
         self.delay_func=[] 
-        def L_PAA(orbit,pos_self,pos_left,pos_right,LISA=LISA):
+        def L_PAA(orbit,pos_self,pos_left,pos_right,LISA=False):
             t_inter = orbit.t
 
             if LISA!=False:
@@ -415,10 +514,13 @@ class PAA():
             L_sr=interp1d(t_send_r_sol,tr_sol)
             L_rl=interp1d(t_rec_l_sol,trl_sol)
             L_rr=interp1d(t_rec_r_sol,trr_sol)
-            
+           
+            dt_l_tot = np.array(tl_sol)+np.array(trl_sol)
+            dt_r_tot = np.array(tr_sol)+np.array(trr_sol)
+
             self.dt_sol_vec = [tl_sol,tr_sol,trl_sol,trr_sol]
 
-            return L_sl, L_sr, L_rl, L_rr
+            return [[L_sl, L_sr, L_rl, L_rr],[dt_l_tot,dt_r_tot]]
 
         def n_r_lisa(i,LISA,m=[2,2,2]):
             [i_self,i_left,i_right] = i_slr(i)
@@ -430,6 +532,7 @@ class PAA():
             r = lambda time: COM(time) - np.array(LISA.putp(i_self,time))
 
             n = lambda time: np.cross(v_l(time),v_r(time))
+            #n = lambda time: n(time)/np.linalg.norm(n(time))
             #n = lambda time: n(time)/np.linalg.norm(n)
             #... Not normalized
             return [n,r]
@@ -460,26 +563,32 @@ class PAA():
                     pos_self_bad = func_pos(orbit,i_self,LISA=False)
                     pos_right_bad = func_pos(orbit,i_right,LISA=False)
 
-                    L_sl,L_sr,L_rl,L_rr = L_PAA(orbit,pos_self_bad,pos_left_bad,pos_right_bad)
+                    [[L_sl,L_sr,L_rl,L_rr],[dt_l_tot,dt_r_tot]] = L_PAA(orbit,pos_self_bad,pos_left_bad,pos_right_bad,LISA=LISA)
                 else:
-                    L_sl,L_sr,L_rl,L_rr = L_PAA(orbit,pos_self,pos_left,pos_right)
+                    [[L_sl,L_sr,L_rl,L_rr],[dt_l_tot,dt_r_tot]] = L_PAA(orbit,pos_self,pos_left,pos_right,LISA=LISA)
             elif delay=='Not ahead':
                 L_sl = lambda t: np.linalg.norm(pos_left(t) - pos_self(t))/c #func_arm_sec(orbit,i_self,'l',LISA=LISA)
                 L_sr = lambda t: np.linalg.norm(pos_right(t) - pos_self(t))/c #func_arm_sec(orbit,i_self,'r',LISA=LISA)
                 L_rl=L_sl
                 L_rr=L_sr
+                dt_l_tot = False
+                dt_r_tot = False
+
             elif delay==False:
                 L_sl = lambda t: 0
                 L_sr = lambda t: 0
                 L_rl=L_sl
                 L_rr=L_sr
+                dt_l_tot = False
+                dt_r_tot = False
+
 
             v_send_l = lambda t: pos_left(t+L_sl(t)) - pos_self(t)
             v_send_r = lambda t: pos_right(t+L_sr(t)) - pos_self(t)
             v_rec_l = lambda t: pos_self(t) - pos_left(t - L_rl(t))
             v_rec_r = lambda t: pos_self(t) - pos_right(t - L_rr(t))
 
-            return v_send_l,v_send_r,v_rec_l,v_rec_r
+            return [[v_send_l,v_send_r,v_rec_l,v_rec_r],[dt_l_tot,dt_r_tot]]
         
         
 
@@ -500,13 +609,19 @@ class PAA():
                 t_calc_new.append(np.linspace(tmin,tmax,((tmax-tmin)/tstep)+1))
 
         self.dt_sol=[]
+        self.dt_l_tot=[]
+        self.dt_r_tot=[]
+
         for i in range(1,4):
             t_calc_vec=[]
             v_l_calc=[]
             v_r_calc=[]
             u_l_calc=[]
             u_r_calc=[]
-            v_l_func,v_r_func,u_l_func,u_r_func = send_func(Orbit,i,delay=delay,LISA=LISA,arm_influence=arm_influence)
+            [[v_l_func,v_r_func,u_l_func,u_r_func],[dt_l_tot_vec,dt_r_tot_vec]] = send_func(Orbit,i,delay=self.delay,LISA=LISA,arm_influence=arm_influence)
+            self.dt_l_tot.append(dt_l_tot_vec)
+            self.dt_r_tot.append(dt_r_tot_vec)
+
             if delay == True:
                 self.dt_sol.append(self.dt_sol_vec)
             #v_l_func_na,v_r_func_na,u_l_func_na,u_r_func_na = send_func(Orbit,i,delay='Not ahead',LISA=LISA)
@@ -645,9 +760,8 @@ class PAA():
 
                     t_plot_vec.append(t_calc[i][j])                   
                    
-                    ang_in_v_l = LA.ang_in_dot(v_l_calc,v_l_stat,n,r)
+                    ang_in_v_l = LA.ang_in_dot(v_l_calc,v_l_stat,n,r)                   
                     ang_in_u_l = LA.ang_in_dot(-u_l_calc,v_l_stat,n,r)
-                   
                     ang_out_v_l = LA.ang_out(v_l_calc,n)
                     ang_out_u_l = LA.ang_out(-u_l_calc,n)
                     
@@ -658,10 +772,32 @@ class PAA():
                      
                     ang_sc_vec.append(LA.angle(v_l_stat,v_r_stat))
                     ang_beam_vec.append(LA.angle(v_l_calc,v_r_calc))
-                    ang_beam_in_l_vec.append(ang_in_v_l - ang_in_u_l)
-                    ang_beam_out_l_vec.append(ang_out_v_l - ang_out_u_l)
-                    ang_beam_in_r_vec.append(ang_in_v_r - ang_in_u_r)
-                    ang_beam_out_r_vec.append(ang_out_v_r - ang_out_u_r)
+
+                    #ang_beam_in_l_vec.append(ang_in_v_l - ang_in_u_l)
+                    #ang_beam_out_l_vec.append(ang_out_v_l - ang_out_u_l)
+                    #ang_beam_in_r_vec.append(ang_in_v_r - ang_in_u_r)
+                    #ang_beam_out_r_vec.append(ang_out_v_r - ang_out_u_r)
+                    
+                    #[calc_angv_l_in,calc_angv_l_out]=LA.ang_in_out(v_l_calc,r,n)
+                    #[calc_angv_r_in,calc_angv_r_out]=LA.ang_in_out(v_r_calc,r,n)
+ 
+                    #[calc_angu_l_in,calc_angu_l_out]=LA.ang_in_out(-u_l_calc,v_l_stat,n)
+                    #[calc_angu_r_in,calc_angu_r_out]=LA.ang_in_out(-u_r_calc,v_r_stat,n)
+                    #
+                    #ang_beam_in_l_vec.append(calc_angv_l_in - calc_angu_l_in)
+                    #ang_beam_out_l_vec.append(calc_angv_l_out - calc_angu_l_out)
+                    #ang_beam_in_r_vec.append(calc_angv_r_in - calc_angu_r_in)
+                    #ang_beam_out_r_vec.append(calc_angv_r_out - calc_angu_r_out)
+                    
+                    [calc_ang_l_in,calc_ang_l_out]=LA.ang_in_out(v_l_calc,-u_l_calc,n,v_l_stat,r)
+                    [calc_ang_r_in,calc_ang_r_out]=LA.ang_in_out(v_r_calc,-u_r_calc,n,v_r_stat,r)
+                   
+                    ang_beam_in_l_vec.append(calc_ang_l_in)
+                    ang_beam_out_l_vec.append(calc_ang_l_out)
+                    ang_beam_in_r_vec.append(calc_ang_r_in)
+                    ang_beam_out_r_vec.append(calc_ang_r_out)
+
+
 
                     L_l_vec.append(LA.norm(v_l_calc))
                     L_r_vec.append(LA.norm(v_r_calc))
@@ -792,19 +928,31 @@ class PAA():
                 v_rel_r_calc = self.v_abs[i_right][j] - self.v_abs[i_self][j]
                 n = normal_vec[i][j]
                
-                r_l = v_l[i_self][j]
-                r_r = v_r[i_self][j]
+                r_l = LA.unit(v_l[i_self][j])
+                r_r = LA.unit(v_r[i_self][j])
 
+                r_in_l = np.cross(n,r_l)
+                r_in_r = np.cross(n,r_r)
                 #inplane_l = LA.outplane(v_rel_l_calc,r_l)
                 #inplane_r = LA.outplane(v_rel_r_calc,r_r) 
                 #outplane_l = LA.outplane(v_rel_l_calc,n)*np.sign(np.dot(v_rel_l_calc,n))
                 #outplane_r = LA.outplane(v_rel_r_calc,n)*np.sign(np.dot(v_rel_r_calc,n))
-                outplane_l = self.v_outplane[i_left][j] - self.v_outplane[i_self][j]
-                alongarm_l = np.dot(v_rel_l_calc - outplane_l,LA.unit(r_l))
+
+                outplane_l = (np.dot(v_rel_l_calc,n)*n) / (np.linalg.norm(n)**2)
+                alongarm_l = (np.dot(v_rel_l_calc,r_l)*r_l) / (np.linalg.norm(r_l)**2)
                 inplane_l = v_rel_l_calc - outplane_l - alongarm_l
-                outplane_r = self.v_outplane[i_right][j] - self.v_outplane[i_self][j]
-                alongarm_r = np.dot(v_rel_r_calc - outplane_r,LA.unit(r_r))
+                outplane_r = (np.dot(v_rel_r_calc,n)*n) / (np.linalg.norm(n)**2)
+                alongarm_r = (np.dot(v_rel_r_calc,r_r)*r_r) / (np.linalg.norm(r_r)**2)
                 inplane_r = v_rel_r_calc - outplane_r - alongarm_r
+
+
+                
+                #outplane_l = self.v_outplane[i_left][j] - self.v_outplane[i_self][j]
+                #alongarm_l = np.dot(v_rel_l_calc - outplane_l,LA.unit(r_l))
+                #inplane_l = v_rel_l_calc - outplane_l - alongarm_l
+                #outplane_r = self.v_outplane[i_right][j] - self.v_outplane[i_self][j]
+                #alongarm_r = np.dot(v_rel_r_calc - outplane_r,LA.unit(r_r))
+                #inplane_r = v_rel_r_calc - outplane_r - alongarm_r
 
                 #v_rel_l_inplane_vec.append(np.linalg.norm(inplane_l)*np.sign(np.dot(inplane_l,r_l)))
                 #v_rel_r_inplane_vec.append(np.linalg.norm(inplane_r)*np.sign(np.dot(inplane_r,r_r)))
@@ -812,10 +960,10 @@ class PAA():
                 #v_rel_r_outplane_vec.append(np.linalg.norm(outplane_r)*np.sign(np.dot(outplane_r,n)))
                 v_rel_l_outplane_vec.append(np.linalg.norm(outplane_l)*np.sign(np.dot(v_rel_l_calc,n)))
                 v_rel_r_outplane_vec.append(np.linalg.norm(outplane_r)*np.sign(np.dot(v_rel_r_calc,n)))
-                v_rel_l_inplane_vec.append(np.linalg.norm(inplane_l))           
-                v_rel_r_inplane_vec.append(np.linalg.norm(inplane_r))
-                v_rel_l_alongarm_vec.append(np.linalg.norm(alongarm_l)*np.sign(alongarm_l))           
-                v_rel_r_alongarm_vec.append(np.linalg.norm(alongarm_r)*np.sign(alongarm_r))
+                v_rel_l_inplane_vec.append(np.linalg.norm(inplane_l)*np.sign(np.dot(inplane_l,r_in_l)))           
+                v_rel_r_inplane_vec.append(np.linalg.norm(inplane_r)*np.sign(np.dot(inplane_r,r_in_r)))
+                v_rel_l_alongarm_vec.append(np.linalg.norm(alongarm_l)*np.sign(np.dot(alongarm_l,r_l)))           
+                v_rel_r_alongarm_vec.append(np.linalg.norm(alongarm_r)*np.sign(np.dot(alongarm_r,r_r)))
                 
 
             v_rel_l_inplane.append(np.array(v_rel_l_inplane_vec))
@@ -867,7 +1015,7 @@ class PAA():
                 offset=3
             print('Offset: '+str(offset))
             #PAA=[PAA_in_l,PAA_in_r,PAA_out_l,PAA_out_r]
-            f,ax = plt.subplots(4,3,figsize=(40,15))
+            f,ax = plt.subplots(4,3,figsize=(15,15))
             f.suptitle('PAA')
             plt.subplots_adjust(hspace=0.6,wspace=0.2)
             titles=['In plane left','Out of plane left','In plane right','Out of plane right']
@@ -882,7 +1030,7 @@ class PAA():
                     x_adj=x/day2sec
                     ax[i,j].plot(x_adj,y,label='S'+str(j+1))
                     ax[i,j].axhline(max(y),label='Max='+"{0:.2e}".format(max(y)),color='0',linestyle='--')
-                    ax[i,j].axhline(min(y),label='Min='+"{0:.2e}".format(max(y)),color='0',linestyle='--')
+                    ax[i,j].axhline(min(y),label='Min='+"{0:.2e}".format(min(y)),color='0',linestyle='--')
 
                     ax[i,j].set_title(titles[i])
                     ax[i,j].set_xlabel('Time (days)')
@@ -892,7 +1040,7 @@ class PAA():
 
             PAA_ret_diff=[]
             t_plot_diff=[]
-            f,ax = plt.subplots(4,3,figsize=(40,15))
+            f,ax = plt.subplots(4,3,figsize=(15,15))
             f.suptitle('Derivative PAA (per time)')
             plt.subplots_adjust(hspace=0.6,wspace=0.2)        
             for i in range(0,len(ax)):
@@ -966,8 +1114,8 @@ class PAA():
 
                 y=ang_sc[i][minp:maxp]-ang_beam[i][minp:maxp]
                 ax[2,0].plot(t_plot[i][minp:maxp],ang_sc[i][minp:maxp]-ang_beam[i][minp:maxp],label='SC'+str(i+1))
-                #dfdx = np.diff(y)/np.diff(x)
-                #ax[2,1].plot(x_diff,dfdx,label='SC'+str(i+1))
+                dfdx = np.diff(y)/np.diff(x)
+                ax[2,1].plot(x_diff,dfdx,label='SC'+str(i+1))
 
             for j in range(0,len(ax)):
                 ax[j,0].legend(loc='best')
@@ -1084,13 +1232,13 @@ class PAA():
             #labels = ['send left','send right','receive left','received right']
             for i in range(0,len(self.v_rel_l_inplane)):
                 x = np.array(t_calc[i][0:-1])/day2sec
-                ax[i,0].set_title('Inplane velocity relative to SC '+str(i+1))
+                ax[i,0].set_title('Angular component of inplane velocity relative to SC '+str(i+1))
                 ax[i,0].plot(x,self.v_rel_l_inplane[i],label='left')
                 ax[i,0].plot(x,self.v_rel_r_inplane[i],label='right')
                 ax[i,1].set_title('Out of plane velocity relative to SC '+str(i+1))
                 ax[i,1].plot(x,self.v_rel_l_outplane[i],label='left')
                 ax[i,1].plot(x,self.v_rel_r_outplane[i],label='right')
-                ax[i,2].set_title('Along arm velocity relative to SC '+str(i+1))
+                ax[i,2].set_title('Radial component of inplane velocity relative to SC '+str(i+1))
                 ax[i,2].plot(x,self.v_rel_l_alongarm[i],label='left')
                 ax[i,2].plot(x,self.v_rel_r_alongarm[i],label='right')
                 
@@ -1105,6 +1253,38 @@ class PAA():
                 ax[i,2].legend(loc='best')           
             figs.append(f)
 
+            if delay==True:
+                f,ax = plt.subplots(4,3,figsize=(15,15))
+                plt.subplots_adjust(wspace=2)
+                f.suptitle('PAA estimate')
+                plt.subplots_adjust(hspace=0.6,wspace=0.2)
+
+                for i in range(0,len(t_calc)):
+                    x = np.array(t_calc[i][0:-1])/day2sec
+                    y_l_in = (self.v_rel_l_inplane[i][0:len(x)]*self.dt_l_tot[i][0:len(x)])/L_l[i][0:len(x)]
+                    y_l_in = y_l_in*1000000
+                    y_r_in = (self.v_rel_r_inplane[i][0:len(x)]*self.dt_r_tot[i][0:len(x)])/L_r[i][0:len(x)]
+                    y_r_in = y_r_in*1000000
+                    
+                    y_l_out = (self.v_rel_l_outplane[i][0:len(x)]*self.dt_l_tot[i][0:len(x)])/L_l[i][0:len(x)]
+                    y_l_out = y_l_out*1000000
+                    y_r_out = (self.v_rel_r_outplane[i][0:len(x)]*self.dt_r_tot[i][0:len(x)])/L_r[i][0:len(x)]
+                    y_r_out = y_r_out*1000000
+
+                    ax[0,i].plot(x,y_l_in,label = 'SC'+str(i+1))
+                    ax[0,i].set_title('In plane left')
+                    ax[1,i].plot(x,y_l_out,label = 'SC'+str(i+1))
+                    ax[1,i].set_title('Out of plane left')
+                    ax[2,i].plot(x,y_r_in,label = 'SC'+str(i+1))
+                    ax[2,i].set_title('In plane right')
+                    ax[3,i].plot(x,y_r_out,label = 'SC'+str(i+1))
+                    ax[3,i].set_title('Out of plane right')
+                   
+                    for j in range(0,len(ax[:,i])):
+                        ax[j,i].set_xlabel('Time (days)')
+                        ax[j,i].set_ylabel('Angle (microrad)')
+                        ax[j,i].legend(loc='best')
+                figs.append(f)
 
 
 
@@ -1112,6 +1292,8 @@ class PAA():
 
             def save_fig(figs):
                 titles=['-PAA','-diffPAA','-PAA_all','-Breathing_angles','-send_receive_angle','-Wobbling_angle','-Armlengths','-Velocity','-Retarded_time','-Relative_velocity']
+                if delay==True:
+                    titles.append('-PPA_estimate')
                 for i in range(0,len(figs)):
                     title=filename_save+titles[i]+'.png'
                     figs[i].savefig(dir_savefig+title)
@@ -1126,16 +1308,16 @@ class PAA():
 
 
             plt.close()
+            self.figs = figs
 
         
-        self.beam = [v_l,v_r,u_l,u_r]
-        self.figs = figs
+        self.beam = [v_l,v_r,u_l,u_r] 
 
         return [[lisa_cache,Orbit],[v_l,v_r,u_l,u_r],PAA_ret,other_ret]
 
 dir_orbits='/home/ester/git/synthlisa/orbits/'
 LISA_opt = True
-delay=True#'Not ahead'#False
+delay=True#e'Not ahead'#False
 
 filename_list=[]
 
@@ -1150,17 +1332,17 @@ for (dirpath, dirnames, filenames) in os.walk(dir_orbits):
 #filename_list=[filename_list[0]]
 #timeunit=['days']
 #dir_extr='new_1_test'
-dir_extr='new_1_synthlisa_arminterp'
+dir_extr='new_1_synthlisa_armcalc'
 #dir_extr='new_4_interp_arminterp'
 #timeunit=['seconds','days','days']
 timeunit='Default'#['days']
-arm_influence=False
-length_calc='all'
+arm_influence=True
+length_calc=200#'all'
 #tstep=3600
 tstep=False
 count=0
 method = 'fsolve'
-select='all'#'Folkner_orbit_timestep_seconds_scale_10'
+select='Hallion'#'Folkner_orbit_timestep_seconds_scale_10'
 PAA_res={}
 filename_done=[]
 for i in filename_list:
