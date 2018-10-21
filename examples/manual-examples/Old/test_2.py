@@ -46,23 +46,32 @@ def point_ahead(lisa,orbit,i,delay=True):
     t_vec=np.array(orbit.t)*365.25*24*3600 # Check which value is used)
     
     L=[]
-    for j in range(0,len(t_vec)):
-        L.append(lisa.armlength(i,orbit.t[j]))
-    L=np.array(L)
-    L=interp1d(t_vec,L)
+    #for j in range(0,len(t_vec)):
+    #    L.append(lisa.armlength(i,orbit.t[j]))
+    #L=np.array(L)
+    #L=interp1d(t_vec,L)
     #L=lambda t: lisa.armlength(i,t/(365.25*360*24)
     #print(L)
     #print(t_vec[loc])
     #print(t_vec[loc]-L)
     i_res=(i+1)%3
     i_send=(i+2)%3
-
     f_pos_res=func_pos(orbit,i_res,t_vec)
     f_pos_send=func_pos(orbit,i_send,t_vec)
-    if delay==True:
-        f_point=lambda t: f_pos_res(t)-f_pos_send(t-L(t))
-    elif delay==False:
-        f_point=lambda t: f_pos_res(t)-f_pos_send(t)
+
+    f_point=[]
+    t_vec_arr=[]
+    for loc in range(0,len(t_vec)):
+        L=lisa.armlength(i,orbit.t[loc])    
+        if delay==True:
+            try:
+                f_point.append(f_pos_res(t_vec[loc])-f_pos_send(t_vec[loc]-L))
+                t_vec_arr.append(t_vec[loc])
+            except:
+                pass
+        elif delay==False:
+            f_point.append(f_pos_res(t_vec[loc])-f_pos_send(t_vec[loc]))
+            t_vec_arr.append(t_vec[loc])
 
     L_max=[0,0]
     for j in range(0,len(t)):
@@ -72,7 +81,7 @@ def point_ahead(lisa,orbit,i,delay=True):
             L_max[1]=j
 
 
-    return f_point,L_max,t_vec
+    return np.array(f_point),L_max,np.array(t_vec_arr)
 
 def func_pos(orbit,i,t_inter):
     i=i-1
@@ -84,28 +93,9 @@ def func_pos(orbit,i,t_inter):
     return lambda time: np.array([fx(time),fy(time),fz(time)])
 
 def point_ahead_func(lisa,orbit,i,loc,opt1='value',delay=True):
-    [fpoint,L_max,t_vec]=point_ahead(lisa,orbit,i,delay=delay)
-    if opt1=='value':
-        try:
-            ret=fpoint(t_vec(loc))
-        except ValueError:
-            print("Can not compute point ahead at that time. t > "+str(t_vec[L_max[1]]))
+    [ret,L_max,t_ret]=point_ahead(lisa,orbit,i,delay=delay)
+    return [ret,t_ret]
 
-        return ret
-
-    elif opt1=='func':
-        ret=[]
-        t_ret=[]
-        for j in t_vec:
-            try:
-                ret.append(fpoint(j))
-                t_ret.append(j)
-            except ValueError:
-                pass
-        ret=np.array(ret)
-        t_ret=np.array(t_ret)
-
-        return [ret,t_ret]
     print('Done for arm '+str(i))
 #pos_func_res=func_pos(Orbit,1,t)
 #pos_func(
@@ -133,7 +123,7 @@ def ang_plane(q,i):
         out=q[(i+1)%3][0][loc,:]
         inc=q[(i+2)%3][0][loc,:]
         ang_inplane.append(angle(-inc[0:2],out[0:2]))
-        ang_outplane.append(np.sign(out[2])*math.degrees(math.asin(np.linalg.norm(out[2])/np.linalg.norm(out))))
+        ang_outplane.append(math.degrees(math.acos(np.linalg.norm(out[1:3])/np.linalg.norm(out))))
     
     return [ang_inplane,ang_outplane]
 
@@ -142,10 +132,10 @@ for i in range(1,4):
     [inplane_del,outplane_del]=ang_plane(q_delay,i)
     [inplane_nodel,outplane_nodel]=ang_plane(q_nodelay,i)
     axarr[i-1,0].set_title('Point ahead angle spacecraft '+str(i))
-    axarr[i-1,0].plot(inplane_del,label='Inplane delayed')
-    axarr[i-1,1].plot(inplane_nodel,label='Inplane not delayed')
-    axarr[i-1,0].plot(outplane_del,label='Outplane delayed')
-    axarr[i-1,1].plot(outplane_nodel,label='Outplane not delayed')
+    axarr[i-1,0].plot(inplane_del,'b-',label='Inplane delayed')
+    axarr[i-1,1].plot(inplane_nodel,'r-',label='Inplane not delayed')
+    axarr[i-1,0].plot(outplane_del,'b--',label='Outplane delayed')
+    axarr[i-1,1].plot(outplane_nodel,'r--',label='Outplane not delayed')
     axarr[i-1,0].legend(loc='best')
     axarr[i-1,1].legend(loc='best')
 
