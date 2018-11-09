@@ -139,7 +139,7 @@ class PAA():
         print('')
         
         self.method = kwargs.pop('method','fsolve')        
-        self.dir_savefig = kwargs.pop('dir_savefig',False)
+        self.dir_savefig = kwargs.pop('dir_savefig',os.getcwd())
         self.dir_extr = kwargs.pop('dir_extr','')
         self.new_folder = kwargs.pop('new_folder',True)
         self.timeunit = kwargs.pop('timeunit','Default')

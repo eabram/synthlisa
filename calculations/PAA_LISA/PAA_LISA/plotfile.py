@@ -28,6 +28,8 @@ def do_plot(self,dir_extr,filename,new_folder,tstep):
     dir_extr_new=dir_extr
     if self.dir_savefig==False:
         self.dir_savefig=os.path.dirname(os.path.realpath(__file__))+'/figures/'+date_str+'/'
+    else:
+        self.dir_savefig=self.dir_savefig+'/figures/'+date_str+'/'
 
     if not os.path.exists(self.dir_savefig):
         os.makedirs(self.dir_savefig)

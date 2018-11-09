@@ -5,10 +5,11 @@ import writefile
 
 def do_run(input_param):
     for keys in input_param.keys():
+        if keys == 'dir_savefig':
+            input_param[keys] = input_param[keys]+'/'
         globals()[keys] = input_param[keys]
         #print(vars()[keys])
         #print(dir_orbits)
-
     filename_list=[]
     filename_done=[]
     PAA_res={}
@@ -47,7 +48,7 @@ def do_run(input_param):
 
         if execute == True:
             filename_save = i.split('/')[-1].split('_')[0]
-            [data,PAA_res[filename_save]]=PAA(home = home,filename = i,directory_imp=False,read_max = length_calc,plot_on=True,dir_extr=dir_extr,new_folder=new_folder,timeunit=timeunit,LISA=LISA_opt,arm_influence=arm_influence,tstep=tstep,delay=delay,method=method,valorfunc='Function').PAA_func()
+            [data,PAA_res[filename_save]]=PAA(home = home,filename = i,directory_imp=False,read_max = length_calc,plot_on=True,dir_extr=dir_extr,new_folder=new_folder,timeunit=timeunit,LISA=LISA_opt,arm_influence=arm_influence,tstep=tstep,delay=delay,method=method,valorfunc='Function',dir_savefig=dir_savefig).PAA_func()
             PAA_res[str(count+1)] = PAA_res[filename_save]
             filename_done.append(filename_name)
             count=count+1
@@ -63,4 +64,4 @@ def do_run(input_param):
             data_all[filename_save] = data
             data_all[str(count)] = data
 
-    return data,PAA_res
+    return data_all,PAA_res
