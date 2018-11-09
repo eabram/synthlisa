@@ -1,8 +1,9 @@
 import PAA_LISA
-  
+import os
+
 input_param = {
         'plot_on':True, #If plots will be made
-        'dir_savefig': False, # The directory where the figures will be saved. If False, it will be in the current working directory
+        'dir_savefig': os.getcwd(), # The directory where the figures will be saved. If False, it will be in the current working directory
         'noise_check':False,
         'home':'/home/ester/git/synthlisa/', # Home directory
         'directory_imp': False,
