@@ -53,10 +53,7 @@ def do_run(input_param):
             filename_done.append(filename_name)
             count=count+1
 
-            if plot_on==True:
-                print i
-                data = plotfile.do_plot(data,dir_extr,i,new_folder,tstep)
-            
+            data = plotfile.do_plot(data,dir_extr,i,new_folder,tstep,plot_on=plot_on)
             data = writefile.do_writefile(data,data_use=True)
 
             save_fig.do_save_fig(data)

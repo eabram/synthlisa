@@ -848,6 +848,7 @@ class PAA():
         self.beam = [v_l,v_r,u_l,u_r]
         self.lisa_orb = lisa_orb
         self.lisa_cache = lisa_cache
+        self.offset = 0
 
         return [self,[[lisa_cache,lisa_orb,Orbit],[v_l,v_r,u_l,u_r],PAA_ret,other_ret]]
 
