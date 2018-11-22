@@ -13,11 +13,13 @@ warnings.filterwarnings('ignore', 'The iteration is not making good progress')
 #warnings.filterwarnings("error")
 import scipy.optimize
 from sympy import *
-from calc import *
+#from calc import *
+from calc2 import *
 import runfile
-import plotfile
+import plotfile2
 import save_fig
 import writefile
+import functions as utils
 
 year2sec=32536000
 day2sec=year2sec/365.25

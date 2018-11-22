@@ -1,5 +1,5 @@
 from imports import *
-import plotfile
+import plotfile2
 import save_fig
 import writefile
 
@@ -9,7 +9,12 @@ def do_run(input_param):
             input_param[keys] = input_param[keys]+'/'
         globals()[keys] = input_param[keys]
         #print(vars()[keys])
-        #print(dir_orbits)
+        #print(dir_orbits) 
+    if 'test_calc' not in input_param.keys():
+        test_calc=False
+    else:
+        test_calc=input_param['test_calc']
+
     filename_list=[]
     filename_done=[]
     PAA_res={}
@@ -48,17 +53,18 @@ def do_run(input_param):
 
         if execute == True:
             filename_save = i.split('/')[-1].split('_')[0]
-            [data,PAA_res[filename_save]]=PAA(home = home,filename = i,directory_imp=False,read_max = length_calc,plot_on=True,dir_extr=dir_extr,new_folder=new_folder,timeunit=timeunit,LISA=LISA_opt,arm_influence=arm_influence,tstep=tstep,delay=delay,method=method,valorfunc='Function',dir_savefig=dir_savefig).PAA_func()
-            PAA_res[str(count+1)] = PAA_res[filename_save]
+            data=PAA(home = home,filename = i,directory_imp=False,read_max = length_calc,plot_on=True,dir_extr=dir_extr,new_folder=new_folder,timeunit=timeunit,LISA=LISA_opt,arm_influence=arm_influence,tstep=tstep,delay=delay,method=method,valorfunc='Function',dir_savefig=dir_savefig,calc_method=calc_method,abberation=abberation).PAA_func() 
             filename_done.append(filename_name)
             count=count+1
 
-            data = plotfile.do_plot(data,dir_extr,i,new_folder,tstep,plot_on=plot_on)
-            data = writefile.do_writefile(data,data_use=True)
+            if test_calc==False:
+                data = plotfile2.do_plot(data,dir_extr,i,new_folder,tstep,plot_on=plot_on)
+                data = writefile.do_writefile(data,data_use=True)
 
-            save_fig.do_save_fig(data)
+                save_fig.do_save_fig(data)
             
-            data_all[filename_save] = data
-            data_all[str(count)] = data
-
-    return data_all,PAA_res
+                data_all[filename_save] = data
+                data_all[str(count)] = data
+            
+            print('test_calc: '+str(test_calc))
+    return data_all
