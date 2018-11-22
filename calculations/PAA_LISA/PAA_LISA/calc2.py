@@ -257,7 +257,10 @@ class PAA():
         PAA_func_val[selections[3]] = lambda i,t: utils.calc_PAA_rout(self,i,t)
 
         self.PAA_func = PAA_func_val 
-        
+       
+        self.ang_breathing_din = lambda i, time: LA.angle(self.v_l_func_tot(i,time),self.v_r_func_tot(i,time))
+        self.ang_breathing_stat = lambda i, time: LA.angle(self.v_l_stat_func_tot(i,time),self.v_r_stat_func_tot(i,time))
+
         return self #...adjust
 
 
