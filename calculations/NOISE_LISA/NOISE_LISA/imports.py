@@ -7,6 +7,8 @@ import math
 import datetime
 from scipy.interpolate import interp1d
 from scipy.interpolate import RegularGridInterpolator
+from control import * # package for control theory calculations
+from control.matlab import * # package for control theory calculations
 
 import warnings
 warnings.filterwarnings('ignore', 'The iteration is not making good progress')
@@ -15,7 +17,7 @@ import scipy.optimize
 from sympy import *
 from calc import *
 import runfile
-
+from WFE import *
 
 
 
