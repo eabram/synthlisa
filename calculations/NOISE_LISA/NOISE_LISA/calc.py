@@ -35,11 +35,11 @@ class Noise():
             self.noise_z = z_all
             self.keys = self.y_lasernoise.keys()
 
-            self.PAAMnoise(self.C_func,self.C_func_star)
+            self.PAAMnoise()
             y_all['PAAM'] = self.y_PAAM
             z_all['PAAM'] = self.z_PAAM
             
-            self.tele_l = lambda i,t: self.tele_control(i,t,option='no control',side='l')
+            self.tele_l = lambda i,t: self.tele_control(i,t,option='no control',side='l') #...adjust for telescope length
             self.tele_r = lambda i,t: self.tele_control(i,t,option='no control',side='r')
             self.tele_l_fc = lambda i,t: self.tele_control(i,t,option='full control',side='l')
             self.tele_r_fc = lambda i,t: self.tele_control(i,t,option='full control',side='r')
@@ -276,71 +276,71 @@ class Noise():
         self.y_shotnoise = yz_shot_calc(self,'y')
         self.z_shotnoise = yz_shot_calc(self,'z')
 
-    def tele_control(self,i,time,option='full control',dt=1,side='l'):
-        data = self.data
+    def tele_control(self,i,t,option='full control',side='l',L_tele=2):
         LA = PAA_LISA.la()
-        t_start = self.t_all[0]
-        t_end = self.t_all[-1]
-        t_vec = np.linspace(t_start,t_end,int((t_end - t_start)/dt))
+        r = self.data.r_func(i,t)
+        n = self.data.n_func(i,t)
         
-        adjust = 0 
-    
-        [i_self,i_left,i_right] = PAA_LISA.utils.i_slr(i)
         if side=='l':
-            beam = data.u_l_func_tot(i_self,time)
-            rot = -30
-        elif side=='r':
-            beam = data.u_r_func_tot(i_self,time)
-            rot=30
+            v = self.data.v_l_func_tot(i,t)
+        if side=='r':
+            v = self.data.v_r_func_tot(i,t)
         
-        if option=='full control':
-            ret = LA.unit(-beam)
-        elif option=='no control':
-            ret = LA.unit(LA.rotate(data.r_func(i,time),data.n_func(i,time),np.radians(rot)))
-        elif len(option)==3:
-            [lower,upper,ang_step] = option
+        x = LA.unit(np.cross(n,r))
+        sign = np.sign(np.dot(x,v))
+        if option=='no control':
+            r_unit = LA.unit(r)
+            ret_x = np.tan(np.radians(30))*np.linalg.norm(r_unit)*x*sign
+            ret = LA.unit(ret_x+r_unit)*L_tele
+        
+        elif option=='full control':
+            v_n = np.dot(v,LA.unit(n))*LA.unit(n)
+            v_tele = v - v_n
+            ret = LA.unit(v_tele)*L_tele
+        
+        
+        
+        return ret 
 
-            tele_list = [LA.unit(beam(t_vec[0]))]
-            for t in t_vec[1:len(t_vec)]:
-                r = data.r_func(i,t)
-                n = data.n_func(i,t)
+    def PAA_control(self,wfe=False):
+        #Remove, only using pointing in WFE class
 
-                beam_l = -data.u_l_func_tot(i,t)
-                ang_l = abs(LA.angle(beam_l,r)) - abs(LA.angle(tele_list[-1],r))
-                if ang_l>upper:
-                    tele_list.append(LA.rotate(tele_l[-1],n,-ang_step))
-                elif ang<lower:
-                    tele_list.append(LA.rotate(tele_l[-1],n,ang_step))
-                else:
-                    tele_list.append(tele_l[-1])
-            
-            ret = interpolate(t_vec,np.array(tele_list))
-
-        return ret
-
-    def PAA_control(self):
         '''Returns the point ahead angle''' #..adjust with controller
         magnification = self.data.MAGNIFICATION
         t_vec = self.t_all
         alpha={}
         alpha_func={}
-        for keys in self.keys:
-            alpha_vec=[]
-            sc_s = int(keys[0])
-            sc_r = int(keys[1])
-            keys_diff = sc_r - sc_s
-            
-            if keys_diff == -1 or keys_diff == 2:
-                alpha_func[keys] = lambda time: self.data.PAA_func['l_out'](int(keys[1]),time)*0.5
-            elif keys_diff == 1 or keys_diff == -2:
-                alpha_func[keys] = lambda time: self.data.PAA_func['r_out'](int(keys[1]),time)*0.5
-            else:
-                raise ValueError('Wrong key')
+        if wfe==False:
+            print('Not using WFE')
+            for keys in self.keys:
+                alpha_vec=[]
+                sc_s = int(keys[0])
+                sc_r = int(keys[1])
+                keys_diff = sc_r - sc_s
+                
+                if keys_diff == -1 or keys_diff == 2:
+                    alpha_func[keys] = lambda time: self.data.PAA_func['l_out'](int(keys[1]),time)*0.5
+                elif keys_diff == 1 or keys_diff == -2:
+                    alpha_func[keys] = lambda time: self.data.PAA_func['r_out'](int(keys[1]),time)*0.5
+                else:
+                    raise ValueError('Wrong key')
 
-        self.alpha_func = alpha_func
+            self.alpha_func = alpha_func
 
-        return alpha_func
+            return alpha_func
+        
+        else:
+            print('Using PAAM pointing from WFE class')
+            for i in range(1,4):
+                [i_self,i_left,i_right] = PAA_LISA.utils.i_slr(i)
+                keyl = str(i_self)+str(i_left)
+                keyr = str(i_self)+str(i_right)
+                alpha_func[keyl] = lambda time: (wfe.beam_aim_l(i_self,time)*0.5)/magnification
+                alpha_func[keyr] = lambda time: (wfe.beam_aim_r(i_self,time)*0.5)/magnification
 
+            self.alpha_func = alpha_func
+
+            return alpha_func
     
     def create_noise(self,mean,sigma,t0,tend,dt=100):
         t_vec = np.linspace(t0,tend,int((tend-t0)/dt))
@@ -351,8 +351,17 @@ class Noise():
 
         return interpolate(t_vec,ret)
 
-    def PAAMnoise(self,C_func,C_func_star):
-        alpha_func = self.PAA_control()
+    def PAAMnoise(self,C_func='default',C_func_star='default',wfe=False):
+        if wfe==False:
+            alpha_func = self.PAA_control()
+            if C_func=='default':
+                C_func = self.C_func
+                C_func_star = self.C_func_star
+        else:
+            alpha_func = self.PAA_control(wfe=wfe)
+            if C_func=='default':
+                C_func = wfe.Ndata.C_func
+                C_func_star = wfe.Ndata.C_func_star
         t_vec = self.t_all
         sigma_Dx = (1000e-6)/3.0
         sigma_Dy = (50e-6)/3.0
@@ -365,7 +374,8 @@ class Noise():
             return OPD
         
         y_PAAM={}
-
+        
+        ttl={}
         for keys in alpha_func.keys():
             Dx = self.create_noise(0,sigma_Dx,t_vec[0],t_vec[-1]) # ... creating discrete uncorrelated noise may cause signal in frequency range
             Dy = self.create_noise(0,sigma_Dy,t_vec[0],t_vec[-1]) # ... creating discrete uncorrelated noise may cause signal in frequency range
@@ -380,6 +390,7 @@ class Noise():
                 side = 'r'
                 C = lambda time: C_func_star[str(sc_r)](time-self.data.L_sr_func_tot(sc_r,time))
             OPD = lambda time: OPD_PAAM(alpha_func[keys],Dx,Dy,sc_r,time) 
+            ttl[keys] = OPD
             OPD_phase = lambda time: (OPD(time)*2*np.pi*nu_0*(C(time))/c)
             
             y_PAAM[keys] = OPD_phase
@@ -411,6 +422,31 @@ class Noise():
 
         self.y_PAAM = y_PAAM
         self.z_PAAM = False
+
+        return ttl
+
+    def PAA_point_calc(self,i,t,side='l',noise=False):#..adjust with noise
+        LA = PAA_LISA.la()
+        data = self.data
+        
+        [i_self,i_left,i_right] = PAA_LISA.utils.i_slr(i)
+        keyl = str(i_self)+str(i_left)
+        keyr = str(i_self)+str(i_right)
+        n = data.n_func(i_self,t)
+        r = data.r_func(i_self,t)
+        rotas = LA.unit(np.cross(r,n))
+        if side=='l':
+            beam_send = LA.rotate(data.v_l_func_tot(i_self,t),rotas,self.alpha_func[keyl](t))
+        elif side=='r':
+            beam_send = LA.rotate(data.v_r_func_tot(i_self,t),rotas,self.alpha_func[keyr](t))
+
+        return beam_send
+
+    def PAA_point(self):
+        self.PAA_point_l = lambda i,t: self.PAA_point_calc(i,t,side='l')
+        self.PAA_point_r = lambda i,t: self.PAA_point_calc(i,t,side='r')
+        
+        return 0
 
 
 

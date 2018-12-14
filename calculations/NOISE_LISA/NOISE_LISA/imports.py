@@ -14,7 +14,7 @@ import warnings
 warnings.filterwarnings('ignore', 'The iteration is not making good progress')
 #warnings.filterwarnings("error")
 import scipy.optimize
-from sympy import *
+import sympy as sp
 from calc import *
 import runfile
 from WFE import *

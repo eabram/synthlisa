@@ -23,6 +23,7 @@ PAA_out_marge = 0.1*0.000001
 
 D = 0.240 # blz. 12 Optical quality criterion of a truncated laser beam for extremely long distance heterodyne interferometry
 gamma_0 = 1.12 # blz. 12 
+L_tele = 1 # meter telecope length
 
 # Calculations
 w0 = D/(2*gamma_0) # blz. 12
