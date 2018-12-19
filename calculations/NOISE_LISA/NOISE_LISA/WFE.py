@@ -16,6 +16,8 @@ class WFE():
         self.speed_on = kwargs.pop('speed_on',True)
         self.simple=True
         self.jitter=[False,False]
+        self.tele_aim_done = False
+        self.jitter_tele_done = False
         self.tilt_send = False
         self.zmn_func = {}
         self.thmn_func = {}
@@ -125,7 +127,14 @@ class WFE():
             beam = self.Ndata.PAA_point_l(i_right,t-tdel)*scale
             v_pos = self.Ndata.data.v_l_func_tot(i_right,t-tdel)*scale
             ps_send = self.phasefront_send(i_self,t,side='r')
-            
+        
+        # Adding telescope jitter
+        
+
+
+
+
+
         [ang_x,ang_y] = LA.beam_ang(beam,tele_rec,n)
 
         #print(LA.beam_ang(beam,tele_rec,n))
@@ -344,17 +353,42 @@ class WFE():
 
         return f
 
-    def jitter_tele(self,N,t_end,psd_h,psd_v):
-        jitter_h = self.Ndata.Noise_time(0.0001,0.1,4096,psd_h,t_end)
-        jitter_v = self.Ndata.Noise_time(0.0001,0.1,4096,psd_v,t_end)
+# Jitter
+    def jitter_tele(self,t_end,psd_in=False,psd_out=False,psd_r=False,psd_in_ang=False,psd_out_ang=False,fmin=0.0001, fmax=0.1,N=4096):
+        jitter_in = self.Ndata.Noise_time(fmin,fmax,N,psd_in,t_end,ret='function')
+        jitter_out = self.Ndata.Noise_time(fmin,fmax,N,psd_out,t_end,ret='function')
+        jitter_r = self.Ndata.Noise_time(fmin,fmax,N,psd_r,t_end,ret='function')
+        jitter_in_ang = self.Ndata.Noise_time(fmin,fmax,N,psd_in_ang,t_end,ret='function')
+        jitter_out_ang = self.Ndata.Noise_time(fmin,fmax,N,psd_out_ang,t_end,ret='function')
 
-        self.jitter=[jitter_h,jitter_v]
+
+        self.jitter=[jitter_in,jitter_out,jitter_r,jitter_in_ang,jitter_out_ang]
 
         return 0
+    
+    def do_jitter_tele(self,psd_in=False,psd_out=False,psd_r=False,psd_in_ang=False,psd_out_ang=False,t_end='all',fmin=0.0001,fmax=0.1,N=4096):
+
+        if t_end=='all':
+            t_end = self.Ndata.t_all[-1]
+
+        jitter_l=[]
+        jitter_r=[]
+        for i in range(1,4):
+            self.jitter_tele(t_end,psd_in=psd_in,psd_out=psd_out,psd_r=psd_r,psd_in_ang=psd_in_ang,psd_out_ang=psd_out_ang,fmin=fmin,fmax=fmax,N=N)
+            jitter_l.append(self.jitter)
+            self.jitter_tele(t_end,psd_in=psd_in,psd_out=psd_out,psd_r=psd_r,psd_in_ang=psd_in_ang,psd_out_ang=psd_out_ang,fmin=fmin,fmax=fmax,N=N)
+            jitter_r.append(self.jitter)
+        
+        self.jitter_tele_done = [jitter_l,jitter_r]
+
+        # Redo telescope pointing vectors
+        self.Ndata.tele_l = lambda i,t: self.Ndata.tele_control(i,t,option='no control',side='l',jitter = self.jitter_tele_done[0])
+        self.Ndata.tele_r = lambda i,t: self.Ndata.tele_control(i,t,option='no control',side='r',jitter = self.jitter_tele_done[1])
+        self.Ndata.tele_l_fc = lambda i,t: self.Ndata.tele_control(i,t,option='full control',side='l',jitter = self.jitter_tele_done[0])
+        self.Ndata.tele_r_fc = lambda i,t: self.Ndata.tele_control(i,t,option='full control',side='r',jitter = self.jitter_tele_done[1])
 
 
-
-
+        return 0
 
 
 # tele and PAA aim
@@ -409,7 +443,7 @@ class WFE():
         
         self.tele_control = 'SS'
         f = interp1d(T_all,yout,bounds_error=False)
-        self.tele_Colntrol_func = f
+        self.tele_control_func = f
         
         return [[T_all,yout],f]
 
@@ -461,7 +495,6 @@ class WFE():
             method = self.tele_control
         print('The telescope control method is: '+method)
         print(' ')
-        done=False
         for i in range(1,4):
             if method =='SS':
                 if simple==False:
@@ -481,14 +514,14 @@ class WFE():
             elif method == 'full control':
                 self.tele_aim_l = self.Ndata.tele_l_fc
                 self.tele_aim_r = self.Ndata.tele_r_fc
-                done=True
+                self.tele_aim_done=True
                 
             elif method == 'no control': 
                 self.tele_aim_l = self.Ndata.tele_l
                 self.tele_aim_r = self.Ndata.tele_r
-                done=True
+                self.tele_aim_done=True
 
-        if done==False:
+        if self.tele_aim_done==False:
             self.tele_aim_l = PAA_LISA.utils.func_over_sc(tele_aim_l)
             self.tele_aim_r = PAA_LISA.utils.func_over_sc(tele_aim_r)
         # Note: length of vectors is arbitrary
@@ -779,9 +812,10 @@ class WFE():
         tele_beam = np.dot(O_tele,LA.unit(beam))*LA.unit(beam)
 
         tele_yoff = LA.outplane(O_tele - tele_beam,n)
-        tele_xoff = np.linalg.norm(O_tele-tele_beam-tele_yoff)
-        tele_yoff = np.linalg.norm(tele_yoff)
-        tele_zoff = np.linalg.norm(tele_beam) - np.linalg.norm(beam)
+        
+        tele_xoff = np.linalg.norm(O_tele-tele_beam-tele_yoff)+djitter[0]
+        tele_yoff = np.linalg.norm(tele_yoff)+djitter[1]
+        tele_zoff = np.linalg.norm(tele_beam) - np.linalg.norm(beam)+djitter[2]
 
 
         zmn={}
@@ -794,7 +828,7 @@ class WFE():
         xoff = tele_xoff
         yoff = tele_yoff
         zoff = np.linalg.norm(tele_beam)+zxoff+zyoff
-        zmn['00'] = zoff
+        zmn['00'] = zoff+dr_rec-dr_send
         thmn['00'] = 0
         xoff = xoff/np.cos(angx)
         yoff = yoff/np.cos(angy)
@@ -851,7 +885,48 @@ class WFE():
             dist = tdel*c
             beam_ideal = self.Ndata.data.v_l_func_tot(i_next,t-tdel)
 
+        if self.jitter_tele_done!=False:
+            if side =='l':
+                pr = 0
+                ps = 1
+            elif side == 'r':
+                pr = 1
+                ps = 0
 
+            dr_send = self.jitter_tele_done[ps][i_next-1][2](t-tdel)
+            din_send = self.jitter_tele_done[ps][i_next-1][0](t-tdel)
+            dout_send = self.jitter_tele_done[ps][i_next-1][1](t-tdel)
+            dr_rec = self.jitter_tele_done[pr][i_self-1][2](t)
+            din_rec = self.jitter_tele_done[pr][i_self-1][0](t)
+            dout_rec = self.jitter_tele_done[pr][i_self-1][1](t)
+            
+
+            r_self = self.Ndata.data.r_func(i_self,t)
+            n_self = n
+            x_self = LA.unit(np.cross(n_self,r_self))
+
+            dr_rec = LA.unit(r_self)*dr_rec
+            dout_rec = LA.unit(n_self)*dout_rec
+            din_rec = x_self*din_rec
+            #print(dr_rec,dout_rec,din_rec)
+
+            djitter_rec = dr_rec+dout_rec+din_rec
+            #print(djitter_rec)
+            djitter_rec = LA.tele_coor(djitter_rec,beam_send,n_next)
+            djitter = djitter_rec - np.array([din_send,dout_send,dr_send])
+
+            #print(djitter)
+
+        else:
+            dr_send = 0
+            din_send = 0
+            dout_send = 0
+            dr_rec = 0
+            din_rec = 0
+            dout_rec = 0
+            
+            djitter=np.array([0,0,0])
+        
         # Calculating tilt
         tele_beamcoor = LA.tele_coor(-tele_rec,beam_send,n_next)
         angx = -np.arcsin(tele_beamcoor[0]/np.linalg.norm(tele_beamcoor))
@@ -862,6 +937,10 @@ class WFE():
         [xoff,yoff,zoff] = LA.tele_coor(tele_pos,beam_send,n_next)
         piston = self.z_solve(xoff,yoff,zoff)
         R = self.R(piston)
+        # Adapting it fot jitter
+        xoff=xoff+djitter[0]
+        yoff=yoff+djitter[1]
+        piston=piston+djitter[2]
 
         # Tilt by offset
         angxoff = np.arcsin(xoff/R)

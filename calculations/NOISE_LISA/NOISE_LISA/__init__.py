@@ -1,6 +1,9 @@
 from .imports import *
 import PAA_LISA
 import functions
+import calc_values
+import plotfile
+
 from .WFE import WFE
 
 from .calc import Noise, TDI

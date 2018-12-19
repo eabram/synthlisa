@@ -85,36 +85,44 @@ class Noise():
 
         return [t_IFFT,IFFT]
 
-    def Noise_time(self,f0,f_max,N,psd,t_stop,unit='freq',t=False):
+    def Noise_time(self,f0,f_max,N,psd,t_stop,unit='freq',t=False,ret='all'):
         '''Returns the noise in time domain untill t_stop (or further)'''
+        if psd!=False:
+            t_max = 0
+            count=0
+            while t_max< t_stop:
+                #print(count)
+                [t_IFFT,IFFT] = self.Noise(f0,f_max,N,psd,unit=unit)
+                if count!=0:
+                    t_tot = np.concatenate((t_tot,t_IFFT+t_tot[-1]))
+                    noise_tot = np.concatenate((noise_tot,IFFT))
+                elif count==0:
+                    t_tot = t_IFFT
+                    noise_tot = IFFT
+                t_max = t_tot[-1]
+                #print(t_max)
+                count=count+1
+
+            t_ret = []
+            noise_ret = []
+            for i in range(0,len(t_tot)):
+                if t_tot[i]<=t_stop:
+                    t_ret.append(t_tot[i])
+                    noise_ret.append(noise_tot[i])
+            t_ret = np.array(t_ret)
+            noise_ret = np.array(noise_ret)
+
+            func_noise = interpolate(t_ret,np.real(noise_ret))
         
-        t_max = 0
-        count=0
-        while t_max< t_stop:
-            #print(count)
-            [t_IFFT,IFFT] = self.Noise(f0,f_max,N,psd,unit=unit)
-            if count!=0:
-                t_tot = np.concatenate((t_tot,t_IFFT+t_tot[-1]))
-                noise_tot = np.concatenate((noise_tot,IFFT))
-            elif count==0:
-                t_tot = t_IFFT
-                noise_tot = IFFT
-            t_max = t_tot[-1]
-            #print(t_max)
-            count=count+1
+        if psd==False:
+            func_noise = lambda y:0
+            ret='function'
+            
+        if ret=='all':
+            return [t_ret,noise_ret],func_noise
 
-        t_ret = []
-        noise_ret = []
-        for i in range(0,len(t_tot)):
-            if t_tot[i]<=t_stop:
-                t_ret.append(t_tot[i])
-                noise_ret.append(noise_tot[i])
-        t_ret = np.array(t_ret)
-        noise_ret = np.array(noise_ret)
-
-        func_noise = interpolate(t_ret,np.real(noise_ret))
-
-        return [t_ret,noise_ret],func_noise
+        elif ret=='function':
+            return func_noise
 
     def lasernoise(self,PSD,f0=1e-6,f_max=1e-3,N=4096):
         '''Obatains lasernoise''' #..adjust for phase locking
@@ -276,7 +284,7 @@ class Noise():
         self.y_shotnoise = yz_shot_calc(self,'y')
         self.z_shotnoise = yz_shot_calc(self,'z')
 
-    def tele_control(self,i,t,option='full control',side='l',L_tele=2):
+    def tele_control(self,i,t,option='full control',side='l',L_tele=2,jitter=False):
         LA = PAA_LISA.la()
         r = self.data.r_func(i,t)
         n = self.data.n_func(i,t)
@@ -298,7 +306,11 @@ class Noise():
             v_tele = v - v_n
             ret = LA.unit(v_tele)*L_tele
         
-        
+        if jitter!=False:
+            jitter_ang_in = jitter[i-1][-2](t)
+            jitter_ang_out = jitter[i-1][-1](t)
+            ret = LA.rotate(ret,n,jitter_ang_in) #...check. Check orientation (when time dependent)
+            ret = LA.rotate(ret,x,jitter_ang_out)
         
         return ret 
 
