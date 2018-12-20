@@ -347,8 +347,8 @@ class Noise():
                 [i_self,i_left,i_right] = PAA_LISA.utils.i_slr(i)
                 keyl = str(i_self)+str(i_left)
                 keyr = str(i_self)+str(i_right)
-                alpha_func[keyl] = lambda time: (wfe.beam_aim_l(i_self,time)*0.5)/magnification
-                alpha_func[keyr] = lambda time: (wfe.beam_aim_r(i_self,time)*0.5)/magnification
+                alpha_func[keyl] = lambda time: (wfe.PAAM_aim_l_ang(i_self,time)*0.5)/magnification
+                alpha_func[keyr] = lambda time: (wfe.PAAM_aim_r_ang(i_self,time)*0.5)/magnification
 
             self.alpha_func = alpha_func
 

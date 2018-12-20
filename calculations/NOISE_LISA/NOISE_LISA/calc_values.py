@@ -4,11 +4,11 @@ from parameters import *
 import PAA_LISA
 import NOISE_LISA
 
-def ttl(wfe,tele_control='no_control',PAAM_control_method='SS',simple=True):
+def ttl(wfe,tele_control='nocontrol',PAAM_control_method='SS',simple=True):
     
     wfe.tele_control = tele_control
     wfe.PAAM_control_method = PAAM_control_method
-    wfe.tele_aim(simple=simple)
+    wfe.tele_aim()
     wfe.PAAM_control()
     
     ttl = {}

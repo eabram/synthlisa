@@ -5,7 +5,7 @@ import calc_values
 import plotfile
 
 from .WFE import WFE
-
+from .plotfile import plot_func
 from .calc import Noise, TDI
 
 import os
