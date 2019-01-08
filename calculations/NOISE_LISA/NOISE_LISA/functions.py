@@ -1,4 +1,42 @@
 from imports import *
+import PAA_LISA
+import NOISE_LISA
+
+global LA
+LA = PAA_LISA.la()
+
+# Changes of coordinate system
+def coor_SC(wfe,i,t):
+    # r,n,x (inplane) format
+
+    r = LA.unit(wfe.Ndata.data.r_func(i,t))
+    n = LA.unit(wfe.Ndata.data.n_func(i,t))
+    x = np.cross(n,r)
+
+    return np.array([r,n,x])
+
+def coor_tele(wfe,i,t,ang_tele,L_tele=2):
+    # Retunrs the coordinate system of telescope (same as SC but rotated over ang_tele inplane)
+
+    [r,n,x] = wfe.coor_SC(i,t)
+    tele = r*L_tele
+    tele = LA.rotate(tele,n,ang_tele)
+    r = LA.unit(tele)
+    x = np.cross(n,r)
+
+    return np.array([r,n,x])
+
+def beam_tele(wfe,i,t,ang_tele,ang_paam):
+    # Retunrs the coordinate system of the transmitted beam (same as SC but rotated over ang_tele inplane and ang_tele outplane)
+    [r,n,x] = wfe.coor_tele(i,t,ang_tele) #Telescope coordinate system
+
+    r = LA.unit(LA.rotate(r,x,ang_paam)) # Rotate r in out of plane over ang_paam
+    n = np.cross(r,x)
+
+    return np.array([r,n,x])
+
+
+
 
 def i_slr(i):
     i_self = i

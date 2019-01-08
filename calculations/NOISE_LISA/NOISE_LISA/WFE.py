@@ -10,10 +10,10 @@ class WFE():
         
         
         self.Ndata = kwargs.pop('Ndata',False)
-        self.tele_control = kwargs.pop('tele_control','full control')
+        self.tele_control = kwargs.pop('tele_control','no control')
         self.PAAM_control_method = kwargs.pop('PAAM_control','SS')
         self.side = kwargs.pop('side','l')
-        self.speed_on = kwargs.pop('speed_on',True)
+        self.speed_on = kwargs.pop('speed_on',0)
         self.simple=True
         self.jitter=[False,False]
         self.tele_aim_done = False
@@ -34,34 +34,16 @@ class WFE():
             LA = PAA_LISA.utils.la()
             self.pupil()
             self.scale=1
- 
-    def coor_SC(self,i,t):
-        # r,n,x (inplane) format
 
-        r = LA.unit(self.Ndata.data.r_func(i,t))
-        n = LA.unit(self.Ndata.data.n_func(i,t))
-        x = np.cross(n,r)
+    def get_pointing(self,tele_method = False,PAAM_method=False): #...add more variables
+        aim = NOISE_LISA.AIM(self)
+        aim.tele_aim(method=tele_method)
+        aim.PAAM_control(method=PAAM_method)
 
-        return np.array([r,n,x])
+        self.aim = aim
 
-    def coor_tele(self,i,t,ang_tele):
-        [r,n,x] = self.coor_SC(i,t)
-        tele = r*L_tele
-        tele = LA.rotate(tele,n,ang_tele)
-        r = LA.unit(tele)
-        x = np.cross(n,r)
 
-        return np.array([r,n,x])
-
-    def beam_tele(self,i,t,ang_tele,ang_paam):
-        [r,n,x] = self.coor_tele(i,t,ang_tele)
-
-        r = LA.unit(LA.rotate(r,x,ang_paam))
-        n = np.cross(r,x)
-
-        return np.array([r,n,x])
-        
-
+    # Beam properties equations
 
     def pupil(self,D_calc = D,Nbins=10):
         self.xlist = np.linspace(-D_calc*0.5,D_calc*0.5,Nbins)
@@ -95,119 +77,124 @@ class WFE():
         else:
             return z_sol
 
-    ### Gaussian beam
-    def phi_gauss(self,i_self,t,dX,dY,side='l',scale=1,tilt_send = 'Default'):
-        if tilt_send=='Default':
-            tilt_send = self.tilt_send
 
+# WFE send
+    def WFE_send(self,i,t,side='l',xlist=False,ylist=False): #...adjust wirt real WFE instead of 0
+        if self.speed_on==2:
+            xlist=np.array([0])
+            ylist=np.array([0])
+        else:
+            if xlist==False:
+                xlist = self.xlist
+            if ylist == False:
+                ylist =self.ylist
 
-        dx_list = self.xlist
-        dy_list = self.ylist
-        Ndata = self.Ndata
-        Deltax = self.Deltax
-        Deltay = self.Deltay
-        Nbinsx = self.Nbinsx
-        Nbinsy = self.Nbinsy
-
-        [i_self,i_left,i_right] = PAA_LISA.utils.i_slr(i_self)
-
-        n = Ndata.data.n_func(i_self,t)
-        
         if side=='l':
-            tdel = self.Ndata.data.L_rl_func_tot(i_self,t)
-            n_left = Ndata.data.n_func(i_left,t-tdel)
-            if self.tele_control=='full control':
-                tele_rec = Ndata.tele_l_fc(i_self,t)
-                tele_send = Ndata.tele_r_fc(i_left,tdel)
-            elif self.tele_control=='no control':
-                tele_rec = Ndata.tele_l(i_self,t)
-                tele_send = Ndata.tele_r(i_left,t-tdel)
-            elif self.tele_control=='SS':
-                r = Ndata.data.r_func(i_self,t)
-                ang_SS = self.tele_SS_l(i_self,t)
-                ang_SS_left = self.tele_SS_r(i_left,t-tdel)
-                tele_rec = LA.unit(LA.rotate(Ndata.tele_l(i_self,t),n,ang_SS))
-                tele_send = LA.unit(LA.rotate(Ndata.tele_r(i_left,t-tdel),n_left,ang_SS_left))
-
-            n_beam = self.Ndata.data.n_func(i_left,(t-tdel))
-            beam = self.Ndata.PAA_point_r(i_left,t-tdel)#...adjust for sending telescope --> PAAM control
-            v_pos = self.Ndata.data.v_r_func_tot(i_left,t-tdel)
-            ps_send = self.phasefront_send(i_self,t,side='l')
-            
+            angy = self.PAAM_aim_l_ang(i,t)
         elif side=='r':
-            tdel = self.Ndata.data.L_rr_func_tot(i,t)
-            if self.tele_control=='full control':
-                tele_rec = Ndata.tele_r_fc(i_self,t)
-                tele_send = Ndata.tele_l_fc(i_right,t-tdel)
-            elif self.tele_control=='no control':
-                tele_rec = Ndata.tele_r(i_self,t)
-                tele_send = Ndata.tele_l(i_right,t-tdel)
-            elif self.tele_control=='SS':
-                r = Ndata.data.r_func(i_self,t)
-                ang_SS = self.tele_SS_r(i_self,t)
-                ang_SS_right = self.tele_SS_l(i_right,t-tdel)
-                
-                tele_rec = LA.unit(LA.rotate(Ndata.tele_r(i_self,t),n,ang_SS))
-                tele_send = LA.unit(LA.rotate(Ndata.tele_l(i_right,t-tdel),n_right,ang_SS_right))
-            
-            n_beam = self.Ndata.data.n_func(i_right,(t-tdel))
-            beam = self.Ndata.PAA_point_l(i_right,t-tdel)*scale
-            v_pos = self.Ndata.data.v_l_func_tot(i_right,t-tdel)*scale
-            ps_send = self.phasefront_send(i_self,t,side='r')
+            angy = self.PAAM_aim_r_ang(i,t)
+        angx = 0 #...to do: Add jitter
+       
+        labda = self.Ndata.data.labda
+        function = lambda x,y: 2*np.pi*((x*np.sin(angx)+y*np.sin(angy))/labda)
+
+        w = self.aperture(xlist,ylist,function,dType = np.float64)
+
+        return w
+
+    def w0(self,i,t,side,ksi):
+        if side=='l':
+            angy = self.PAAM_aim_l_ang(i,t)
+        elif side == 'r':
+            angy = self.PAAM_aim_r_ang(i,t)
+        angx=0#...add jitter
+
+        [x,y] = ksi
         
-        # Adding telescope jitter
+        labda = self.Ndata.data.labda
+        w_error = 2*np.pi*((x*np.sin(angx)+y*np.sin(angy))/labda)
+
+        return w_error
+
+    def u0(self,ksi):#...for gaussian beam
+        w = self.w(0)
+        [x,y] = ksi
+
+        return np.exp(-((x**2+y**2)/(w**2)))
+
+# WFE receive
+    
+    def u_rz_calc(self,r,z,SC,t,side,xlist=False,ylist=False):
+        if xlist==False:
+            xlist = self.xlist
+        if ylist==False:
+            ylist = self.ylist
+        labda = self.Ndata.data.labda
+        k = (2*np.pi)/labda
         
+        dksi = (xlist[1]-xlist[0])*(ylist[1]-ylist[0])
+        ret=0
+        for i in range(0,len(xlist)):
+            for j in range(0,len(ylist)):
+                ksi = np.array([xlist[i],ylist[j]])
+                T1 = np.exp((1j*k*np.dot(r,ksi))/z)
+                T2 = self.u0(ksi)
+                T3 = np.exp(1j*self.w0(SC,t,side,ksi))
 
+                ret = ret+T1*T2*T3
+        ret = ret*dksi*(1j*k*np.exp(-(1j*k*(np.linalg.norm(r)**2))/(2*z))/(2*np.pi*z))
 
+        return ret
 
+    def u_rz(self,zmn,thmn,ksi,i,t,side='l',xlist=False,ylist=False):
+        [x0,y0] = ksi
+        z0 = zmn['00']
+        angx = zmn['11']*np.cos(thmn['11'])
+        angy = zmn['11']*np.sin(thmn['11'])
+        x = x0*np.cos(angx)
+        y = y0*np.cos(angy)
+        z = z0 + x0*np.sin(angx)+y0*np.sin(angy)
+        r = np.array([x,y])
 
+        u = self.u_rz_calc(r,z,i,t,side,xlist=xlist,ylist=ylist)
+        w = self.w(z) #...check if proper z is used (z0)
+        wac = (self.Ndata.data.D/2)/w
+        norm = ((np.pi*((2*np.pi)/self.Ndata.data.labda)*w**2*(1-np.exp(-1/(wac**2))))/(2*np.pi*z))**2
+        I = (abs(u)**2)/norm
+        phase = np.angle(u)
 
-        [ang_x,ang_y] = LA.beam_ang(beam,tele_rec,n)
+        return u,I,phase
 
-        #print(LA.beam_ang(beam,tele_rec,n))
-        E0 = 1
-        psi=0 #Gouy angle
+    def u_rz_aperture(self,zmn,thmn,i,t,side='l',xlist=False,ylist=False,mode='power'):
+        if self.speed_on>=1: #Only canculates center (works correctly for only piston and tilt
+            xlist = np.array([0])
+            ylist = np.array([0])
+         
+        if mode=='power':
+            function = lambda x,y: self.u_rz(zmn,thmn,np.array([x,y]),i,t,side=side,xlist=xlist,ylist=ylist)[1]
+            ps = self.aperture(xlist,ylist,function,dType=np.float64)
+        elif mode=='u':
+            function = lambda x,y: abs(self.u_rz(zmn,thmn,np.array([x,y]),i,t,side=side,xlist=xlist,ylist=ylist)[0])
+            ps = self.aperture(xlist,ylist,function,dType=np.float64)
+        elif mode=='phase':
+            function = lambda x,y: self.u_rz(zmn,thmn,np.array([x,y]),i,t,side=side,xlist=xlist,ylist=ylist)[2]
+            ps = self.aperture(xlist,ylist,function,dType=np.float64)
 
-        # calculate offset
-        offset = v_pos - beam
-        [xoff,yoff,zoff] = LA.beam_coor(offset,LA.unit(-beam),n_beam)
-        R = np.linalg.norm(v_pos)*scale
         
-        dX_ac = np.cos(ang_x)*dX
-        dY_ac = np.cos(ang_y)*dY
-        dZ_ac = np.sin(ang_x)*dX+np.sin(ang_y)*dY
-        dR_ac = (dX_ac**2+dY_ac**2)**0.5
-        #d_ac = R - dZ_ac
-        d_ac = self.z_solve(dX_ac,dY_ac,R+dZ_ac)
-
         
-        ps=np.empty((Nbinsx,Nbinsy),dtype = np.complex64)
-        for i in range(0,len(dx_list)):
-            for j in range(0,len(dy_list)):
-                dx = dx_list[i]
-                dy = dy_list[j]
-                dr = (dx**2+dy**2)**0.5
-                if tilt_send==True:
-                    Zn=ps_send[i,j]
-                else:
-                    Zn=0
-                if dr<=0.5*D:
-                    E = E0*np.exp(-(dr**2)/(w0**2))*np.exp(1j*psi)              
-                    S = (R**2+((dX_ac+xoff)-dx_list[i])**2+((dY_ac+yoff)-dy_list[j])**2)**0.5
-                    #print(S)
-                    ps[i,j] = np.exp(1j*(2*np.pi/labda)*(Zn+S))*Deltax*Deltay # removed E/S
-                else:
-                    ps[i,j] = np.nan
+        return ps
 
-            ret = np.nansum(ps)
-            I = (np.real(ret)**2 + np.imag(ret**2))**0.5
-            #TTL = np.log(np.imag(ret))
-            TTL = np.angle(ret)*labda/(2*np.pi)
+    
 
-        return I,TTL,ps
 
-    def aperture(self,xlist,ylist,function,dType=np.complex64):
-        print('Type of telescope control is: ' + self.tele_control)
+    def aperture(self,xlist,ylist,function,dType=np.complex64): # Creates matrix of function over an aperture (circle)
+        #print('Type of telescope control is: ' + self.tele_control)
+        if type(xlist)==bool:
+            if xlist==False:
+                xlist = self.xlist
+        if type(ylist)==bool:
+            if ylist==False:
+                ylist = self.ylist
 
         Nbins = len(xlist)
         D = max(xlist)
@@ -235,49 +222,6 @@ class WFE():
         return TTL
 
     
-    def I_rec(self,i,t):
-        if self.simple == True:
-            I = self.phi_gauss(i,t,0,0)[0]
-        else:
-            I = self.aperture(self.xlist,self.ylist, lambda dx,dy: self.phi_gauss(i,t,dx,dy)[0])
-
-        return I
-
-    def plot_aperture(self,ps_list,mode = 'Phi',figs=[1,1],vlim=True):
-        def plot_plot(ax_sel,ps):
-            if mode == 'Phi' and vlim==True:
-                p1 = ax_sel.matshow(ps,cmap='magma',vmin=-np.pi,vmax=np.pi)
-            elif mode == 'I' or vlim==False:
-                p1 = ax_sel.matshow(ps,cmap='magma')
-            ax_sel.set_title(mode)
-            f.colorbar(p1,ax=ax_sel)
-
-            return 0 
-        
-        
-        f,ax = plt.subplots(figs[0],figs[1])
-        xlist = self.xlist
-        ylist = self.ylist
-        
-        count = 0 
-        try:
-            for i in len(ax):
-                try:
-                    for j in len(ax[i]):
-                        plot_plot(ax[i,j],ps_list_count)
-                        count=count+1
-                except:
-                    plot_plot(ax[i],ps_list[count])
-                    count=count+1
-                    break
-        except:
-            plot_plot(ax,ps_list[count])
-            count=count+1
-            pass
-
-        return f
-
-
 
 # Jitter
     def jitter_tele(self,t_end,psd_in=False,psd_out=False,psd_r=False,psd_in_ang=False,psd_out_ang=False,fmin=0.0001, fmax=0.1,N=4096):
@@ -318,83 +262,6 @@ class WFE():
 
 
 # tele and PAA aim
- 
-#    def tele_control_noise(self,i,step_max=False,dt=1,side='l'):
-#
-#        t_vec = self.Ndata.t_all
-#        d30 = np.radians(30)
-#        #b0 = self.tele_l_fc(1,t0)
-#        b0 = d30
-#        sys = tf([np.radians(b0)], [1,20000,1]) # Define a transfer function C/R = 2/(s^2+2s+2)
-#        
-#        if step_max==False:
-#            t_calc = t_vec
-#        else:
-#            t_calc = t_vec[0:step_max] #... adjust for longer/whole time period
-#        
-#        T = np.linspace(0,t_vec[1]-t_vec[0],int(t_vec[1]-t_vec[0])/dt)
-#
-#        yout=[]
-#        
-#        if side=='l':
-#            tele = self.Ndata.tele_l_fc
-#        elif side=='r':
-#            tele = self.Ndata.tele_r_fc
-#       
-#        T_all = []
-#        for t in t_calc[0:len(t_calc)-1]: 
-#            if t==t_calc[0]:
-#                X0 = LA.angle(tele(i,t),self.Ndata.data.r_func(i,t))/d30
-#            else:
-#                X0 = (yout_calc[-1])/d30
-#            U = LA.angle(tele(i,t+T[-1]),self.Ndata.data.r_func(i,t+T[-1]))/d30
-#            U = U*1
-#            
-#            K = d30*X0
-#            #sys = tf([K], [1,20000,1]) # Define a transfer function C/R = 2/(s^2+2s+2)
-#            
-#            yout_calc = lsim(sys,T=T,U=U,X0 = X0)[0]
-#            #plt.plot(yout_calc)
-#            yout.append(np.ndarray.tolist(yout_calc))
-#            T_all.append(np.ndarray.tolist(T+t))
-#        
-#        
-#        for i in range(0,len(yout)):
-#            x = T+i*T[-1]
-#            #plt.plot(x,yout[i])
-#
-#        yout = LA.flatten(yout)
-#        T_all = LA.flatten(T_all)
-#
-#        
-#        self.tele_control = 'SS'
-#        f = interp1d(T_all,yout,bounds_error=False)
-#        self.tele_control_func = f
-#        
-#        return [[T_all,yout],f]
-#
-#    def step_res(self,t,tarray,yarray): #... has to be adjusted for realistic respons (created beacuase of mal functioning tele_control_noise
-#        loc=0
-#        t_l = tarray[loc]
-#        t_r = tarray[loc+1]
-#        y = yarray[loc]
-#        while not (t<t_r and t>=t_l):
-#            t_l=tarray[loc]
-#            t_r=tarray[loc+1]
-#            y = yarray[loc]
-#            if loc==len(tarray)-2:
-#                y = np.nan
-#                break
-#            loc = loc+1
-#
-#        return y
-
-
-
-
-
-
-
     
     def tele_control_ang_fc_calc(self,i,t,side='l'):
         coor = self.coor_SC(i,t)
@@ -417,7 +284,7 @@ class WFE():
         return 0
 
 
-    def tele_aim(self,method=False,dt=3600*24):
+    def tele_aim(self,method=False,dt=3600*24,jitter=False):
         self.tele_control_ang_fc()
 
         if method == False:
@@ -437,8 +304,14 @@ class WFE():
             tele_aim_l = lambda i,t: self.tele_ang_l_fc(i,t-(t%dt))
             tele_aim_r = lambda i,t: self.tele_ang_r_fc(i,t-(t%dt))
 
-        self.tele_aim_l = tele_aim_l
-        self.tele_aim_r = tele_aim_r
+        self.tele_aim_l_0 = tele_aim_l
+        self.tele_aim_r_0 = tele_aim_r
+        if jitter!=False:
+            self.tele_aim_l = lambda i,t: self.add_jitter(self.tele_aim_l_0,i,t,1e-6,1e10,dt=0.1)
+            self.tele_aim_r = lambda i,t: self.add_jitter(self.tele_aim_r_0,i,t,1e-6,1e10,dt=0.1)
+        else:
+            self.tele_aim_l = self.tele_aim_l_0
+            self.tele_aim_r = self.tele_aim_r_0
 
         self.tele_aim_l_vec = lambda i,t: LA.unit(self.coor_tele(i,t,self.tele_aim_l(i,t))[0])*L_tele
         self.tele_aim_r_vec = lambda i,t: LA.unit(self.coor_tele(i,t,self.tele_aim_r(i,t))[0])*L_tele
@@ -447,8 +320,17 @@ class WFE():
         self.tele_aim_r_coor = lambda i,t: self.coor_tele(i,t,self.tele_aim_r(i,t))
 
         return 0
+
+    def add_jitter(self,ang_func,i,t,dang,scale_v,dt=0.1):
+        # add position jitter
+        # add velocity jitter
+        v = (ang_func(i,t) - ang_func(i,t-dt))/dt
     
-    def PAAM_control(self,method=False,dt=3600*24):
+        return np.random.normal(ang_func(i,t),dang*(1+v*scale_v))#...adjust: make correlated errors
+        
+
+    
+    def PAAM_control(self,method=False,dt=3600*24,jitter=False):
         if method==False:
             method = self.PAAM_control_method
         print('The PAAM control method is: ' +method)
@@ -467,8 +349,15 @@ class WFE():
             ang_l = lambda i,t: ang_fc_l(i,t-(t%dt))
             ang_r = lambda i,t: ang_fc_r(i,t-(t%dt))
 
-        self.PAAM_aim_l_ang = ang_l
-        self.PAAM_aim_r_ang = ang_r
+        self.PAAM_aim_l_ang_0 = ang_l
+        self.PAAM_aim_r_ang_0 = ang_r
+        
+        if jitter!=False:
+            self.PAAM_aim_l_ang = lambda i,t: self.add_jitter(self.PAAM_aim_l_ang_0,i,t,1e-8,1e20,dt=3600)
+            self.PAAM_aim_r_ang = lambda i,t: self.add_jitter(self.PAAM_aim_r_ang_0,i,t,1e-8,1e20,dt=3600)
+        else:
+            self.PAAM_aim_l_ang = self.PAAM_aim_l_ang_0
+            self.PAAM_aim_r_ang = self.PAAM_aim_r_ang_0
 
         self.beam_aim_l_coor = lambda i,t: self.beam_tele(i,t,self.tele_aim_l(i,t),self.PAAM_aim_l_ang(i,t))
         self.beam_aim_r_coor = lambda i,t: self.beam_tele(i,t,self.tele_aim_r(i,t),self.PAAM_aim_r_ang(i,t))
@@ -478,86 +367,6 @@ class WFE():
         
         return 0
         
-
-#    def PAAM_control_fc_calc(self,i,t,side='l'):
-#        
-#        n = self.Ndata.data.n_func(i,t)
-#        
-#        if side=='l':
-#            opt = self.Ndata.data.v_l_func_tot(i,t)
-#            tele = self.tele_aim_l(i,t)
-#        elif side=='r':
-#            opt = self.Ndata.data.v_r_func_tot(i,t)
-#            tele = self.tele_aim_r(i,t)
-#        ang_out_opt = LA.ang_out(opt,n)
-#        ang_out_tele = LA.ang_out(tele,n)
-#        PAAM = ang_out_opt - ang_out_tele
-#        
-#        return PAAM
-#
-#    def PAAM_control_vec(self,i,t,side='l'):
-#        n=self.Ndata.data.n_func(i,t)
-#        if side=='l':
-#            ang = self.beam_aim_l(i,t)
-#            tele = self.tele_aim_l(i,t)
-#
-#        elif side=='r':
-#            ang = self.beam_aim_r(i,t)
-#            tele = self.tele_aim_r(i,t)
-#
-#        tele_mag = np.linalg.norm(tele)
-#        tele = LA.unit(tele)
-#        tele_n = np.dot(tele,n)*n
-#        tele_r = tele - tele_n
-#        beam_n_new = np.tan(ang)*np.linalg.norm(tele_r)*n
-#        beam_new = LA.unit(tele_r+beam_n_new)*tele_mag
-#            
-#        return beam_new
-#
-#    def PAAM_control(self,method=False):
-#        beam_aim_l = []
-#        beam_aim_r = []
-##        beam_aim_vec_l = []
-##        beam_aim_vec_r = []
-#
-#        if method==False:
-#            method = self.PAAM_control_method
-#        print('The PAAM control method is: ' +method)
-#        print(' ')
-#
-#        for i in range(1,4):
-#            if method=='SS':
-#           
-#                yarrl = []
-#                yarrr = []
-#
-#                for t_step in self.Ndata.data.t_all:
-#                    yarrl.append(self.PAAM_control_fc_calc(i,t_step,side='l'))
-#                    yarrr.append(self.PAAM_control_fc_calc(i,t_step,side='r'))
-#
-#                beam_aim_l.append(lambda t: self.step_res(t,self.Ndata.data.t_all,yarrl))
-#                beam_aim_r.append(lambda t: self.step_res(t,self.Ndata.data.t_all,yarrr))
-#
-#            elif method=='fc':
-#                beam_aim_l.append(lambda t: self.PAAM_control_fc_calc(i,t,side='l'))
-#                beam_aim_r.append(lambda t: self.PAAM_control_fc_calc(i,t,side='r'))
-#
-#            elif method=='nc':
-#                beam_aim_l.append(lambda t:0)
-#                beam_aim_r.append(lambda t:0)
-#            
-#            #beam_aim_vec_l.append(lambda t: self.PAAM_control_vec(i,t,side='l'))
-#            #beam_aim_vec_r.append(lambda t: self.PAAM_control_vec(i,t,side='r'))
-#
-#
-#        self.beam_aim_l = PAA_LISA.utils.func_over_sc(beam_aim_l)
-#        self.beam_aim_r = PAA_LISA.utils.func_over_sc(beam_aim_r)
-#        self.beam_aim_vec_l = lambda i,t: self.PAAM_control_vec(i,t,side='l')
-#        self.beam_aim_vec_r = lambda i,t: self.PAAM_control_vec(i,t,side='r')
-#
-#        return 0
-
-
 
 ### Sending wavefront
 
@@ -595,7 +404,7 @@ class WFE():
 
     def zern(self,m,n,zmn=False,thmn=False,offset=[0,0],mode='ttl'):
         if zmn==False:
-            zmn = self.smn
+            zmn = self.zmn
             thmn = self.thmn
         ps = np.empty((self.Nbinsx,self.Nbinsy),dtype=np.float64)
         for i in range(0,len(self.xlist)):
@@ -882,6 +691,8 @@ class WFE():
         zmn['00'] = zmn00
         zmn['11'] = zmn11
         thmn['11'] = thmn11
+        self.zmn = zmn
+        self.thmn = thmn
 
         return [xoff,yoff,zoff],zmn,thmn
 
@@ -894,8 +705,113 @@ class WFE():
         
         return P
 
+    def get_zern_poly(self,zmn=False,thmn=False,nmax=4):
+        if zmn==False:
+            zmn = self.zmn
+        if thmn==False:
+            thmn = self.thmn
+
+        for n in range(0,nmax+1):
+            for m in range(-n,n+1):
+                if (m%2)==(n%2):
+                    key=str(m)+str(n)
+                    if key not in zmn.keys():
+                        zmn[key]=0
+                    if key not in thmn.keys():
+                        thmn[key]=0
+
+        self.zmn=zmn
+        self.thmn=thmn
+
+        return zmn,thmn
 
 
+    def zern_para(self,z=False,zmn=False,thmn=False,x=0,y=0):
+        if zmn==False:
+            zmn = self.zmn
+        if thmn==False:
+            thmn = self.thmn
+
+        x0 = x
+        y0 = y
+        angx = zmn['11']*np.cos(thmn['11'])
+        angy = zmn['11']*np.sin(thmn['11'])
+
+        x = x0*np.cos(angx)
+        y = y0*np.cos(angy)
+        if z==False:
+            z = zmn['00']
+        z = z + x0*np.sin(angx)+y0*np.sin(angy)
+
+        labda = self.Ndata.data.labda
+        w = self.w(z)
+        r0 = self.Ndata.data.D*0.5
+        k = (2*np.pi)/labda #...adjust for laser noise
+        wac = r0/w
+        q = -1.0/(wac**2) # ...In Sasso paper not with minus sign!!!
+        print(wac,q) 
+        zmn,thmn = self.get_zern_poly(zmn=zmn,thmn=thmn)
+
+        z02 = zmn['02']
+        z04 = zmn['04']
+        z22abs = zmn['22']
+        z33abs = zmn['33']
+        th33 = thmn['33']
+        th22 = thmn['22']
+        th11 = thmn['11']
+        z13abs = zmn['13']
+        th13 = thmn['13']
+
+        dzx = zmn['11']*np.cos(thmn['11'])#... adjust to (36a)
+        dzy = zmn['11']*np.sin(thmn['11'])#...ajust to (36b)
+
+
+        A2 = (1+np.exp(q)+2*(1-np.exp(q))*(wac**2))/(1-np.exp(q))
+        A4 = (1-np.exp(q)+6*(1+np.exp(q))*(wac**2) + 12*(1-np.exp(q))*(wac**4))/(1-np.exp(q))
+        B = (-2*(1+3*(wac**2)+6*(wac**4)+6*(1-np.exp(q))*(wac**6)))/(1-np.exp(q))
+        C = (-2*(1+5*(wac**2)+2*(7+2*np.exp(q))*(wac**4)+18*(1-np.exp(q))*(wac**6)))/(1-np.exp(q))
+        D = (4*(np.exp(q)+6*np.exp(q)*(wac**2)-2*(2-np.exp(q) - np.exp(2*q))*(wac**4) - 12*((1-np.exp(q))**2)*(wac**6)))/((1-np.exp(q))**2)
+        G = (24*((np.exp(q)*(wac**2))-(2-9*np.exp(q)+np.exp(2*q))*(wac**4) -2*(7-2*np.exp(q)-5*np.exp(2*q))*(wac**6) -30*(1-np.exp(q))*(wac**8)))/((1-np.exp(q))**2)
+
+        #G = 0#3(24*(np.exp(q)*(wac**2)-(2-9*np.exp(q) + np.exp(2*q))*(wac**4) - 2*(7-2*np.exp(q) - 5*np.exp(2*q))*(wac**6) -30((1-np.exp(q))**2)*(wac**8)))/((1-np.exp(q))**2)
+        E = (2*(np.exp(q) - ((1-np.exp(2*q))**2)*(wac**4)))/((1-np.exp(q))**2)
+        F = (-1*(1+2*(wac**2)+2*(1-np.exp(q))*(wac**4)))/(1-np.exp(q))
+        H = (6*(2*np.exp(q)*(wac**2) - (1-np.exp(2*q))*(wac**4)-4*((1-np.exp(q))**2)*(wac**6)))/((1-np.exp(q))**2)
+
+        b0 = A2*z02+A4*z04
+        b1 = B*z22abs*z33abs*np.cos(th33-th22-th11)+C*z22abs*z13abs*np.cos(th22-th13-th11)+D*z02*z13abs*np.cos(th13-th11)+G*z04*z13abs*np.cos(th13-th11)
+        b2 = E*z02+F*z22abs*np.cos(th22-2*th11)+H*z04
+
+        b00 = b0
+        b10 = B*np.cos(th33-th22)*z33abs*z22abs +C*np.cos(th22-th13)*z13abs*z22abs+D*np.cos(th13)*z13abs*z02 +G*np.cos(th13)*z13abs*z22abs
+        b01 = B*np.sin(th33-th22)*z33abs*z22abs +C*np.sin(th22-th13)*z13abs*z22abs+D*np.sin(th13)*z13abs*z02 +G*np.sin(th13)*z13abs*z22abs
+        b20 = E*z02+F*np.cos(th22)*z22abs+H*z04
+        b02 = E*z02-F*np.cos(th22)*z22abs+H*z04
+        b11 = 2*F*np.sin(th22)*z22abs
+
+        
+        # Power density
+        c1 = -(4*(1+2*(2+np.exp(q))*(wac**2)+6*(1-np.exp(q))*(wac**4)))/(1-np.exp(-q))
+        c2 = (2*(1+(1-np.exp(q))*(wac**2)))/(1-np.exp(-q))
+        I = 1+c1*z13abs*(np.cos(th13)*dzx+np.sin(th13)*dzy)-c2*(dzx**2+dzy**2)
+        print(c1,c2,I)
+       
+        u0,[a0,a1,a2,a3] = self.WFE_rec(zmn,thmn,xlist=False,ylist=False,fast_cal=True)
+
+        u_2 = ((np.pi**2)*(w**4)*abs(a0+1j*a1+a2)**2*(k**2))/((2*np.pi*z)**2)
+        I_2 = u_2/(((np.pi*k*w**2)*(1-np.exp(-1.0/(wac**2)))/(2*np.pi*z))**2)
+
+
+
+
+        return u_2,I,I_2
+
+#    def power_rec(self,y=0,x=0):
+#        u0,I0 = self.zern_para(z=False,zmn=False,thmn=False)
+#        
+#        x0 = x
+#        y  
+#        x = 
 
 
 
