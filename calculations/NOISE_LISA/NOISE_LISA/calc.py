@@ -347,8 +347,8 @@ class Noise():
                 [i_self,i_left,i_right] = PAA_LISA.utils.i_slr(i)
                 keyl = str(i_self)+str(i_left)
                 keyr = str(i_self)+str(i_right)
-                alpha_func[keyl] = lambda time: (wfe.PAAM_aim_l_ang(i_self,time)*0.5)/magnification
-                alpha_func[keyr] = lambda time: (wfe.PAAM_aim_r_ang(i_self,time)*0.5)/magnification
+                alpha_func[keyl] = lambda time: (wfe.aim.PAAM_l_ang(i_self,time)*0.5)/magnification
+                alpha_func[keyr] = lambda time: (wfe.aim.PAAM_r_ang(i_self,time)*0.5)/magnification
 
             self.alpha_func = alpha_func
 
@@ -378,10 +378,13 @@ class Noise():
         sigma_Dx = (1000e-6)/3.0
         sigma_Dy = (50e-6)/3.0
 
-        def OPD_PAAM(alpha_func,Dx_func,Dy_func,r,t):
+        def OPD_PAAM(alpha_func,Dx_func,Dy_func,r,t,dt=0.001,scale_din=5e20):
             alpha = alpha_func(t)
-            Dx = Dx_func(t)
-            Dy = Dy_func(t)
+            alpha_dot = (alpha_func(t)-alpha_func(t-dt))/dt
+
+            Dx = Dx_func(t)*(1+scale_din*alpha_dot)
+            Dy = Dy_func(t)*(1+scale_din*alpha_dot)
+
             OPD = (Dy-Dx*np.tan(alpha))*(np.sin(alpha)/np.sin(np.radians(135)))*(1-np.cos(np.radians(90)-2*alpha))
             return OPD
         

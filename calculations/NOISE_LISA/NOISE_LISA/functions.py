@@ -18,7 +18,7 @@ def coor_SC(wfe,i,t):
 def coor_tele(wfe,i,t,ang_tele,L_tele=2):
     # Retunrs the coordinate system of telescope (same as SC but rotated over ang_tele inplane)
 
-    [r,n,x] = wfe.coor_SC(i,t)
+    [r,n,x] = coor_SC(wfe,i,t)
     tele = r*L_tele
     tele = LA.rotate(tele,n,ang_tele)
     r = LA.unit(tele)
@@ -28,7 +28,7 @@ def coor_tele(wfe,i,t,ang_tele,L_tele=2):
 
 def beam_tele(wfe,i,t,ang_tele,ang_paam):
     # Retunrs the coordinate system of the transmitted beam (same as SC but rotated over ang_tele inplane and ang_tele outplane)
-    [r,n,x] = wfe.coor_tele(i,t,ang_tele) #Telescope coordinate system
+    [r,n,x] = coor_tele(wfe,i,t,ang_tele) #Telescope coordinate system
 
     r = LA.unit(LA.rotate(r,x,ang_paam)) # Rotate r in out of plane over ang_paam
     n = np.cross(r,x)

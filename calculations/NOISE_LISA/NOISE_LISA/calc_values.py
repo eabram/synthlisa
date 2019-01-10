@@ -4,13 +4,15 @@ from parameters import *
 import PAA_LISA
 import NOISE_LISA
 
-def ttl(wfe,tele_control='nocontrol',PAAM_control_method='SS',simple=True):
+def ttl(wfe,tele_control=False,PAAM_control_method=False,simple=True):
     
-    wfe.tele_control = tele_control
-    wfe.PAAM_control_method = PAAM_control_method
-    wfe.tele_aim()
-    wfe.PAAM_control()
-    
+    if tele_control==False:
+        tele_control = wfe.tele_control
+    if PAAM_control_method==False:
+        PAAM_control_method = wfe.PAAM_control_method
+
+    wfe.get_pointing(PAAM_method = PAAM_control_method,tele_method = tele_control) 
+     
     ttl = {}
     wfe.ttl_pointing_function(option='all')
     ttl['pointing_all'] = wfe.ttl_l,wfe.ttl_r
